@@ -3,7 +3,8 @@ import { useRouter } from 'next/router'
 
 const Index = () => {
   const router = useRouter()
-  const REALM = 'jjCAwuuNpJCNMLAanpwgJZ6cdXzLPXe2GfD6TaDQBXt'
+  // process env acting funny
+  const REALM = 'Jito'
 
   useEffect(() => {
     const mainUrl = REALM ? `/dao/${REALM}` : '/realms'
