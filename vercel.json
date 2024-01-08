@@ -1,0 +1,14 @@
+{
+  "functions": {
+    "api/governance-notifier.ts": {
+      "runtime": "nodejs16.x"
+    }
+  },
+  "cronJobs": [
+    {
+      "name": "governance-notifier",
+      "path": "/api/governance-notifier",
+      "schedule": "*/10 * * * *"
+    }
+  ]
+}

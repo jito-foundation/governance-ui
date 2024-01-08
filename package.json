@@ -29,7 +29,6 @@
   "dependencies": {
     "@blockworks-foundation/mango-mints-redemption": "0.0.10",
     "@blockworks-foundation/mango-v4": "0.20.3",
-    "@jup-ag/referral-sdk": "0.1.5",
     "@blockworks-foundation/mango-v4-settings": "0.2.19",
     "@blockworks-foundation/mangolana": "0.0.1-beta.15",
     "@bonfida/spl-name-service": "0.1.47",
@@ -55,6 +54,7 @@
     "@heroicons/react": "1.0.6",
     "@hookform/resolvers": "2.8.10",
     "@identity.com/sol-did-client": "3.1.4",
+    "@jup-ag/referral-sdk": "0.1.5",
     "@marinade.finance/marinade-ts-sdk": "2.0.9",
     "@mean-dao/payment-streaming": "4.0.3",
     "@metaplex-foundation/js": "0.19.4",
@@ -117,6 +117,7 @@
     "@urql/exchange-multipart-fetch": "1.0.1",
     "@urql/exchange-persisted-fetch": "2.0.0",
     "@urql/exchange-request-policy": "1.0.0",
+    "@vercel/node": "3.0.15",
     "arweave": "1.11.4",
     "axios": "0.26.1",
     "bignumber.js": "9.0.2",
