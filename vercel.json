@@ -1,9 +1,4 @@
 {
-  "functions": {
-    "api/governance-notifier.ts": {
-      "runtime": "nodejs16.x"
-    }
-  },
   "crons": [
     {
       "path": "/api/governance-notifier",
