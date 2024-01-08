@@ -117,7 +117,6 @@
     "@urql/exchange-multipart-fetch": "1.0.1",
     "@urql/exchange-persisted-fetch": "2.0.0",
     "@urql/exchange-request-policy": "1.0.0",
-    "@vercel/node": "3.0.15",
     "arweave": "1.11.4",
     "axios": "0.26.1",
     "bignumber.js": "9.0.2",
