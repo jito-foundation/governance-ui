@@ -4,7 +4,7 @@
       "runtime": "nodejs16.x"
     }
   },
-  "cronJobs": [
+  "crons": [
     {
       "name": "governance-notifier",
       "path": "/api/governance-notifier",
