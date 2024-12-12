@@ -59,6 +59,7 @@ export const getTreasuryAccountItemInfoV2 = (account: AssetAccount) => {
       : ''
 
   return {
+    decimalAdjustedAmount: amount,
     accountName,
     amountFormatted,
     logo,
@@ -67,5 +68,6 @@ export const getTreasuryAccountItemInfoV2 = (account: AssetAccount) => {
     info,
     symbol,
     totalPrice,
+
   }
 }
