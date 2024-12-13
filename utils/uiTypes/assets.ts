@@ -19,6 +19,7 @@ interface AccountExtension {
 export type GovernanceProgramAccountWithNativeTreasuryAddress = ProgramAccount<Governance> & {
   nativeTreasuryAddress: PublicKey
 }
+
 export interface AssetAccount {
   governance: GovernanceProgramAccountWithNativeTreasuryAddress
   pubkey: PublicKey
@@ -27,6 +28,18 @@ export interface AssetAccount {
   isSol?: boolean
   isNft?: boolean
   isToken?: boolean
+}
+
+export type TreasuryAccountItemInfo = {
+  decimalAdjustedAmount: number
+  amountFormatted: string
+  name: string
+  symbol: string
+  totalPrice?: number
+  displayPrice?: string
+  logo: string
+  mintPubkey?: PublicKey
+  mintAddress?: string
 }
 
 export enum AccountType {

@@ -7,7 +7,7 @@ import { abbreviateAddress } from './formatting'
 import tokenPriceService from './services/tokenPrice'
 import { AccountType, AssetAccount } from './uiTypes/assets'
 
-export const getTreasuryAccountItemInfoV2 = (account: AssetAccount) => {
+export const getTreasuryAccountItemInfoV3 = (account: AssetAccount) => {
   const mintAddress =
     account.type === AccountType.SOL
       ? WSOL_MINT
@@ -24,11 +24,6 @@ export const getTreasuryAccountItemInfoV2 = (account: AssetAccount) => {
           )
         ).toNumber()
       : 0
-  const price = tokenPriceService.getUSDTokenPrice(mintAddress!)
-  const totalPrice = amount * price
-  const totalPriceFormatted = amount
-    ? new BigNumber(totalPrice).toFormat(0)
-    : ''
   const info = tokenPriceService.getTokenInfo(mintAddress!)
 
   const symbol =
@@ -53,20 +48,14 @@ export const getTreasuryAccountItemInfoV2 = (account: AssetAccount) => {
     ? abbreviateAddress(account.extensions.transferAddress as PublicKey)
     : ''
 
-  const displayPrice =
-    totalPriceFormatted && totalPriceFormatted !== '0'
-      ? totalPriceFormatted
-      : ''
-
   return {
     decimalAdjustedAmount: amount,
     accountName,
     amountFormatted,
-    logo,
+    // logo: mintAddress ? `https://jito.network/coinsByMint/${mintAddress}.webp` : logo ? logo : undefined,
+    logo: logo || '',
     name,
-    displayPrice,
     info,
     symbol,
-    totalPrice,
   }
 }

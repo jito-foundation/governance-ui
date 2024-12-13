@@ -1,67 +1,52 @@
-import { useMemo } from 'react'
-import { getTreasuryAccountItemInfoV2 } from '@utils/treasuryTools'
-import { AssetAccount } from '@utils/uiTypes/assets'
+import { AssetAccount, TreasuryAccountItemInfo } from '@utils/uiTypes/assets'
 import TokenIcon from '@components/treasuryV2/icons/TokenIcon'
 import { useTokenMetadata } from '@hooks/queries/tokenMetadata'
-import { useJupiterPriceByMintQuery } from '../../hooks/queries/jupiterPrice'
-import BigNumber from 'bignumber.js'
+import { useMemo, useState } from 'react'
+
+type AccountItemProps = {
+  governedAccountTokenAccount: AssetAccount
+  treasuryInfo: TreasuryAccountItemInfo
+}
 
 const AccountItem = ({
   governedAccountTokenAccount,
-}: {
-  governedAccountTokenAccount: AssetAccount
-}) => {
+  treasuryInfo,
+}: AccountItemProps) => {
+  const [imgError, setImgError] = useState(false)
+
   const {
-    decimalAdjustedAmount,
     amountFormatted,
     logo,
     name,
     symbol,
-  } = getTreasuryAccountItemInfoV2(governedAccountTokenAccount)
+    displayPrice,
+    mintPubkey,
+  } = treasuryInfo || {}
 
-  const { data: priceData } = useJupiterPriceByMintQuery(
-    governedAccountTokenAccount.extensions.mint?.publicKey
-  )
-
-  const { data } = useTokenMetadata(
-    governedAccountTokenAccount.extensions.mint?.publicKey,
+  const { data: tokenMetadata } = useTokenMetadata(
+    mintPubkey,
     !logo
   )
 
   const symbolFromMeta = useMemo(() => {
-    // data.symbol is kinda weird
-    //Handle null characters, whitespace, and ensure fallback to symbol
-    const cleanSymbol = data?.symbol
-      ?.replace(/\0/g, '')  // Remove null characters
-      ?.replace(/\s+/g, ' ') // Normalize whitespace to single spaces
-      ?.trim() // Remove leading/trailing whitespace
-    
-    return cleanSymbol || symbol || ''
-  }, [data?.symbol, symbol])
+    const cleanSymbol = tokenMetadata?.symbol
+      ?.replace(/\0/g, '')
+      ?.replace(/\s+/g, ' ')
+      ?.trim()
 
-  const displayPrice = useMemo(() => {
-    if (!decimalAdjustedAmount || !priceData?.result?.price) return ''
-    
-    try {
-      const totalPrice = decimalAdjustedAmount * priceData.result.price
-      return new BigNumber(totalPrice).toFormat(0)
-    } catch (error) {
-      console.error('Error calculating display price:', error)
-      return ''
-    }
-  }, [priceData, decimalAdjustedAmount])
+    return cleanSymbol || symbol || ''
+  }, [tokenMetadata?.symbol, symbol])
 
   return (
     <div className="flex items-center w-full p-3 border rounded-lg text-fgd-1 border-fgd-4">
-      {logo ? (
+      {logo && !imgError ? (
         <img
-          className={`flex-shrink-0 h-6 w-6 mr-2.5 mt-0.5 ${
-            governedAccountTokenAccount.isSol ? 'rounded-full' : ''
-          }`}
+          className={`flex-shrink-0 h-6 w-6 mr-2.5 mt-0.5 ${governedAccountTokenAccount.isSol ? 'rounded-full' : ''
+            }`}
           src={logo}
           onError={({ currentTarget }) => {
             currentTarget.onerror = null
-            currentTarget.hidden = true
+            setImgError(true)
           }}
           alt={`${name} logo`}
         />

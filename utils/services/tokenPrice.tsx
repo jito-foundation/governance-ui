@@ -10,7 +10,7 @@ import { USDC_MINT } from '@blockworks-foundation/mango-v4'
 
 //this service provide prices it is not recommended to get anything more from here besides token name or price.
 //decimals from metadata can be different from the realm on chain one
-const priceEndpoint = 'https://price.jup.ag/v4/price'
+const priceEndpoint = 'https://api.jup.ag/price/v2'
 const tokenListUrl = 'https://token.jup.ag/strict'
 
 export type TokenInfoWithoutDecimals = Omit<TokenInfo, 'decimals'>
@@ -69,10 +69,11 @@ class TokenPriceService {
             ...keyValue,
           }
         } catch (e) {
-          notify({
-            type: 'error',
-            message: 'unable to fetch token prices',
-          })
+          console.log("Price error", e)
+          // notify({
+          //   type: 'error',
+          //   message: 'unable to fetch token prices',
+          // })
         }
       }
       const USDC_MINT_BASE = USDC_MINT.toBase58()
