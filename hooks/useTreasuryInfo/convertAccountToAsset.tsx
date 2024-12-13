@@ -10,6 +10,7 @@ import { abbreviateAddress } from '@utils/formatting'
 import { getAccountAssetCount } from './getAccountAssetCount'
 import { fetchJupiterPrice } from '@hooks/queries/jupiterPrice'
 import { getAccountValue, getStakeAccountValue } from './getAccountValue'
+import { getAccountValueV2 } from './getAccountValueV2'
 
 export const convertAccountToAsset = async (
   account: AssetAccount,
@@ -52,7 +53,8 @@ export const convertAccountToAsset = async (
           : undefined,
       }
 
-    case AccountType.SOL:
+    case AccountType.SOL: {
+      const { value, price } = await getAccountValueV2(account)
       return {
         type: AssetType.Sol,
         address: account.pubkey.toBase58(),
@@ -63,17 +65,14 @@ export const convertAccountToAsset = async (
         ) : (
           <TokenIcon className="fill-fgd-1" />
         ),
-        price: account.extensions.mint
-          ? new BigNumber(
-              (await fetchJupiterPrice(account.extensions.mint.publicKey))
-                .result?.price ?? 0
-            )
-          : undefined,
+        price,
         raw: account,
-        value: getAccountValue(account),
+        value,
       }
+    }
 
-    case AccountType.TOKEN:
+    case AccountType.TOKEN: {
+      const { value, price } = await getAccountValueV2(account)
       return {
         type: AssetType.Token,
         address: account.pubkey.toBase58(),
@@ -87,16 +86,12 @@ export const convertAccountToAsset = async (
         logo: info.info?.logoURI,
         mintAddress: account.extensions.token?.account.mint.toBase58(),
         name: info.accountName || info.info?.name || info.name || info.symbol,
-        price: account.extensions.mint
-          ? new BigNumber(
-              (await fetchJupiterPrice(account.extensions.mint.publicKey))
-                .result?.price ?? 0
-            )
-          : undefined,
+        price,
         raw: account,
         symbol: info.symbol,
-        value: getAccountValue(account),
+        value,
       }
+    }
 
     case AccountType.STAKE:
       return {

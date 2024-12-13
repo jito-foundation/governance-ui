@@ -214,7 +214,7 @@ export const assembleWallets = async (
           upgradeAuthority: account.authority?.toBase58(),
           walletIsUpgradeAuthority:
             account.authority?.toBase58() ===
-              walletMap[walletAddress].governanceAddress ||
+            walletMap[walletAddress].governanceAddress ||
             account.authority?.toBase58() === walletAddress,
           raw: p,
         }))
@@ -272,8 +272,9 @@ export const assembleWallets = async (
         ? getAccountName(wallet.governanceAddress)
         : getAccountName(wallet.address),
       totalValue: calculateTotalValue(
-        wallet.assets.map((asset) =>
-          'value' in asset ? asset.value : new BigNumber(0)
+        wallet.assets.map((asset) => {
+          return 'value' in asset ? asset.value : new BigNumber(0)
+        }
         )
       ),
     })
@@ -326,16 +327,16 @@ export const assembleWallets = async (
 
   const auxiliaryWallets: AuxiliaryWallet[] = auxiliaryAssets.length
     ? [
-        {
-          assets: auxiliaryAssets,
-          name: 'Auxiliary Assets',
-          totalValue: calculateTotalValue(
-            auxiliaryAssets.map((asset) =>
-              'value' in asset ? asset.value : new BigNumber(0)
-            )
-          ),
-        },
-      ]
+      {
+        assets: auxiliaryAssets,
+        name: 'Auxiliary Assets',
+        totalValue: calculateTotalValue(
+          auxiliaryAssets.map((asset) =>
+            'value' in asset ? asset.value : new BigNumber(0)
+          )
+        ),
+      },
+    ]
     : []
 
   const walletsToMerge = allWallets
