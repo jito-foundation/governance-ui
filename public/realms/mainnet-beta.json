@@ -3828,5 +3828,16 @@
     "shortDescription": "The DAO for the cXYZ token, checkout our website at coordinate.digital .",
     "website": "https://coordinate.digital",
     "twitter": "@coordinatecXYZ"
+  },
+  {
+    "symbol": "ai0x",
+    "displayName": "ai0x",
+    "bannerImage": "/realms/ai0x/aibanner.png",
+    "programId": "GovER5Lthms3bLBqWub97yVrMmEogzX7xNjdXpPPCVZw",
+    "realmId": "2Js8BPEGzbTuA3urvQ2ZpGnhpbPQGgv3nnbY2Nq5KYmx",
+    "ogImage": "/realms/ai0x/ailogo.png",
+    "shortDescription": "The AI research agent. Powered by #ai0x token. Scan any github to get a detailed report: http://ai0x.fun",
+    "website": "http://ai0x.fun",
+    "twitter": "@ai0xdotfun"
   }
 ]
