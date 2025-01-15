@@ -37,6 +37,7 @@ import dayjs from 'dayjs'
 import { JUPITER_REF } from './programs/jupiterRef'
 import { STAKE_SANCTUM_INSTRUCTIONS } from './programs/stakeSanctum'
 import { SYMMETRY_V2_INSTRUCTIONS } from './programs/symmetryV2'
+import { TOKEN_2022_INST } from './programs/token2022'
 
 /**
  * Default governance program id instance
@@ -143,24 +144,25 @@ export const ACCOUNT_NAMES = {
   BtJaNZrZZmagHGzCU2VazSJWzBS9KY7tG41enBrT2NtU: 'DAO: (DEAN) Liquidity Reserve',
 
   // EpicentralDAO
-  'LABSh5DTebUcUbEoLzXKCiXFJLecDFiDWiBGUU1GpxR': 'LABS Token Mint',
+  LABSh5DTebUcUbEoLzXKCiXFJLecDFiDWiBGUU1GpxR: 'LABS Token Mint',
 
-  'Crn54GhCKYkpoy1Mp1qZWJrzsaSbJQDR46uF5Rn4gRot': 'Main DAO Treasury',
+  Crn54GhCKYkpoy1Mp1qZWJrzsaSbJQDR46uF5Rn4gRot: 'Main DAO Treasury',
   '3BEvopNQ89zkM4r6ADva18i5fao1sqR1pmswyQyfj838': 'SOL Main Reserve',
-  'Gh2MXR1b4CM3M5nnkoPE8Y1fpQ1H7Ujg4m8rAU2N9cCJ': 'LABS Main Vault',
+  Gh2MXR1b4CM3M5nnkoPE8Y1fpQ1H7Ujg4m8rAU2N9cCJ: 'LABS Main Vault',
 
   '5jagwdtwXufeiqn6XLxWaeCRPYT924Axyzo9ZDLAxPFC': 'Community Treasury',
-  'DR1P6yBNXQ8YLBrpYpU3FjnnruStMRzm2y2cAA3D6ynm': 'SOL Community Reserve',
-  '5hYmaq1Su7fJLPAS4mKMiUq3tirR72duGGMRU2ejFMaQ': 'LABS Contributor Bonus Vault',
+  DR1P6yBNXQ8YLBrpYpU3FjnnruStMRzm2y2cAA3D6ynm: 'SOL Community Reserve',
+  '5hYmaq1Su7fJLPAS4mKMiUq3tirR72duGGMRU2ejFMaQ':
+    'LABS Contributor Bonus Vault',
 
   '24Z8YUVPBSP6JHfrsy8wkGXXf1JpuA7JGfmrk2frE1zL': 'Marketing Treasury',
   '6tpxdCf56XZQbdieLFZGDgaWpefc6SZPGy9Sg6MqYVRB': 'SOL Marketing Reserve',
-  'BHjWxsNEwMCwtPWoJMsjFzjXCTgr6kbHKprGrNgLfW81': 'LABS Marketing Vault',
-  
+  BHjWxsNEwMCwtPWoJMsjFzjXCTgr6kbHKprGrNgLfW81: 'LABS Marketing Vault',
+
   '9zUzsav4JcUHnmzsT9YFkbk2YvjxEf9MosVTKYDDnnnW': 'Rewards Treasury',
   '6yuntQAS5gSwhhKaXG3QYbcwXPxhsbULu9Tzv9mizUUm': 'SOL Rewards Reserve',
   '6PPtCuNPxipkwATrXorGNMFsEiJK2WNwNRVdgzTJZfU8': 'LABS DeFi Rewards Vault',
-  
+
   // Physis DAO
   '29epeLvAMyRXtpA1HaoKB1hGcAnrc1NvMCbaZ8AVRwEi': 'Physis DAO Treasury',
   '4i2Yjk5bUiLeVNwqBpkRdFSECSCvMgKoeCSdRSx1TPcz': 'DAO: Rewards (PHY)',
@@ -347,9 +349,9 @@ export const ACCOUNT_NAMES = {
   '6gwjRFcW1Y9iuJwXPdz1zZUa3Hcu855dH6APA5LjD8qK':
     'AllDomains Treasury Governance',
   AWVUWfRnHCTgo123mRXB9BRWaxt6JdZXXKhFMQ5mryKJ: 'AllDomains DAO Governance',
-  
+
   // Parcl
-  "9Waj7NNTzEhyHf1j1F36xgtnXaLoAxVBFhf6VxE9fgaf": 'Parcl DAO'
+  '9Waj7NNTzEhyHf1j1F36xgtnXaLoAxVBFhf6VxE9fgaf': 'Parcl DAO',
 }
 
 // TODO: Add this to on-chain metadata to Governance account
@@ -517,6 +519,7 @@ export interface InstructionDescriptor {
 // Well known program instructions displayed on the instruction card
 export const INSTRUCTION_DESCRIPTORS = {
   ...SPL_TOKEN_INSTRUCTIONS,
+  ...TOKEN_2022_INST,
   ...BPF_UPGRADEABLE_LOADER_INSTRUCTIONS,
   ...RAYDIUM_INSTRUCTIONS,
   ...MARINADE_INSTRUCTIONS,
