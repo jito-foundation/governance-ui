@@ -162,6 +162,8 @@ export const ACCOUNT_NAMES = {
   '9zUzsav4JcUHnmzsT9YFkbk2YvjxEf9MosVTKYDDnnnW': 'Rewards Treasury',
   '6yuntQAS5gSwhhKaXG3QYbcwXPxhsbULu9Tzv9mizUUm': 'SOL Rewards Reserve',
   '6PPtCuNPxipkwATrXorGNMFsEiJK2WNwNRVdgzTJZfU8': 'LABS DeFi Rewards Vault',
+  // Epicentral Labs Core Team
+  'EPTE4ewwiBdSu53NHc2Q57tyiYkcPai3VLu3BSUUN89C': 'Core Team Wallet',
   '7fGPDUx91yTASVAyt3DTUEnxMN1ghL1oQ69BVv8q8z3z': 'Admin Treasury',
   'GpbTR5zgfgM6tJt1epcXFvNELusiacc7qKr845FRnzZv': 'SOL Admin Reserve',
   'Auecwis4vTxvHHkqKvPiut3GzuSN85ZWM6z2WDhZtrxh': 'LABS Admin Vault',
