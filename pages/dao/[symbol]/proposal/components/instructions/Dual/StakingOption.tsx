@@ -62,35 +62,35 @@ const StakingOption = ({
     setForm({ ...form, [propertyName]: value })
   }
   const schema = getDualFinanceStakingOptionSchema({ form, connection })
-  useEffect(() => {
-    const getAssetAccountMetadata = async (
-      mintAssetAccount: AssetAccount,
-      base: boolean
-    ) => {
-      const {
+  const getAssetAccountMetadata = async (
+    mintAssetAccount: AssetAccount,
+    base: boolean
+  ) => {
+    const {
+      logo,
+      name,
+      symbol,
+      displayPrice,
+    } = await getTreasuryAccountItemInfoV2Async(mintAssetAccount)
+    if (base) {
+      setBaseMetadata({
         logo,
         name,
         symbol,
         displayPrice,
-      } = await getTreasuryAccountItemInfoV2Async(mintAssetAccount)
-      if (base) {
-        setBaseMetadata({
-          logo,
-          name,
-          symbol,
-          displayPrice,
-          decimals: mintAssetAccount.extensions.mint!.account.decimals,
-        })
-      } else {
-        setQuoteMetadata({
-          logo,
-          name,
-          symbol,
-          displayPrice,
-          decimals: mintAssetAccount.extensions.mint!.account.decimals,
-        })
-      }
+        decimals: mintAssetAccount.extensions.mint!.account.decimals,
+      })
+    } else {
+      setQuoteMetadata({
+        logo,
+        name,
+        symbol,
+        displayPrice,
+        decimals: mintAssetAccount.extensions.mint!.account.decimals,
+      })
     }
+  }
+  useEffect(() => {
     function getInstruction(): Promise<UiInstruction> {
       return getConfigInstruction({
         connection,
@@ -104,6 +104,16 @@ const StakingOption = ({
       { governedAccount: governedAccount, getInstruction },
       index
     )
+  }, [
+    form,
+    governedAccount,
+    handleSetInstructions,
+    index,
+    connection,
+    schema,
+    wallet,
+  ])
+  useEffect(() => {
     if (
       form.baseTreasury &&
       form.baseTreasury.extensions.mint &&
@@ -122,16 +132,6 @@ const StakingOption = ({
     } else {
       setQuoteMetadata(undefined)
     }
-  }, [
-    form,
-    governedAccount,
-    handleSetInstructions,
-    index,
-    connection,
-    schema,
-    wallet,
-  ])
-  useEffect(() => {
     setGovernedAccount(form.baseTreasury?.governance)
   }, [form.baseTreasury])
 
