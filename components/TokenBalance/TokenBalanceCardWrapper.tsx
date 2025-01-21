@@ -25,18 +25,18 @@ const LockPluginTokenBalanceCard = dynamic(
   () =>
     import(
       'VoteStakeRegistry/components/TokenBalance/LockPluginTokenBalanceCard'
-    )
+    ),
 )
 
 const HeliumVotingPowerCard = dynamic(() =>
   import('HeliumVotePlugin/components/VotingPowerCard').then((module) => {
     const { VotingPowerCard } = module
     return VotingPowerCard
-  })
+  }),
 )
 
 const NftVotingPower = dynamic(
-  () => import('../ProposalVotingPower/NftVotingPower')
+  () => import('../ProposalVotingPower/NftVotingPower'),
 )
 
 export const GovernancePowerTitle = () => {
@@ -80,8 +80,8 @@ const TokenBalanceCardInner = ({
   const showNftCard = requiredCards?.includes('NFT')
   const showGatewayCard = requiredCards?.includes('gateway')
   const showQvCard = requiredCards?.includes('QV')
-  const showParclCard = requiredCards?.includes('parcl');
-  const showBonkCard = requiredCards?.includes('bonk');
+  const showParclCard = requiredCards?.includes('parcl')
+  const showBonkCard = requiredCards?.includes('bonk')
 
   if (showDefaultVSRCard && inAccountDetails) {
     return <LockPluginTokenBalanceCard inAccountDetails={inAccountDetails} /> // does this ever actually occur in the component hierarchy?
@@ -99,7 +99,7 @@ const TokenBalanceCardInner = ({
         {!inAccountDetails && <GovernancePowerTitle />}
         <HeliumVotingPowerCard inAccountDetails={inAccountDetails} />
         <ClaimUnreleasedPositions inAccountDetails={inAccountDetails} />
-      </React.Fragment>
+      </React.Fragment>,
     )
   }
 
@@ -111,15 +111,13 @@ const TokenBalanceCardInner = ({
           <ClaimUnreleasedNFTs inAccountDetails={inAccountDetails} />
         </div>
         <VanillaAccountDetails />
-      </div>
+      </div>,
     )
   }
 
   if (showBonkCard) {
     cards.push(
-      <React.Fragment key="bonk">
-        {<BonkBalanceCard />}
-      </React.Fragment>
+      <React.Fragment key="bonk">{<BonkBalanceCard />}</React.Fragment>,
     )
   }
 
@@ -127,7 +125,7 @@ const TokenBalanceCardInner = ({
     cards.push(
       <React.Fragment key="pyth">
         {inAccountDetails ? <PythAccountDetails /> : <GovernancePowerCard />}
-      </React.Fragment>
+      </React.Fragment>,
     )
   }
 
@@ -139,7 +137,7 @@ const TokenBalanceCardInner = ({
         ) : (
           <GovernancePowerCard />
         )}
-      </React.Fragment>
+      </React.Fragment>,
     )
   }
 
@@ -152,7 +150,7 @@ const TokenBalanceCardInner = ({
             <VanillaVotingPower role="council" hideIfZero />
           </>
         )}
-      </React.Fragment>
+      </React.Fragment>,
     )
   }
 
@@ -161,7 +159,7 @@ const TokenBalanceCardInner = ({
       <React.Fragment key="parcl">
         {!inAccountDetails && <GovernancePowerTitle />}
         <ParclAccountDetails />
-      </React.Fragment>
+      </React.Fragment>,
     )
   }
 
@@ -170,7 +168,7 @@ const TokenBalanceCardInner = ({
     cards.push(
       <React.Fragment key="vanilla">
         {inAccountDetails ? <VanillaAccountDetails /> : <GovernancePowerCard />}
-      </React.Fragment>
+      </React.Fragment>,
     )
   }
 
