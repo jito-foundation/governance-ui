@@ -218,12 +218,8 @@ const Params = () => {
                       MintMaxVoteWeightSourceType.SupplyFraction
                         ? `${communityMintMaxVoteWeightSource.fmtSupplyFractionPercentage()}% of supply`
                         : formatTokenAmount
-                        ? fmtBNAmount(
-                            new BN(
-                              formatTokenAmount(
-                                communityMintMaxVoteWeightSource.value,
-                              ),
-                            ),
+                        ? formatTokenAmount(
+                            communityMintMaxVoteWeightSource.value,
                           )
                         : `${fmtBNAmount(
                             communityMintMaxVoteWeightSource.value,
