@@ -113,11 +113,13 @@ const HarvestTokenPanel = ({ mint }: { mint: PublicKey }) => {
           )}
         </p>
         <p>
-          {accountsToHarvest === null
-            ? 'Load accounts first'
-            : accountsToHarvest.length > 0
-            ? ''
-            : 'No accounts to harvest'}{' '}
+          <div className="pb-4">
+            {accountsToHarvest === null
+              ? 'Load accounts first'
+              : accountsToHarvest.length > 0
+              ? ''
+              : 'No accounts to harvest'}{' '}
+          </div>
           <Button
             isLoading={isHarvesting}
             onClick={harvestFees}
