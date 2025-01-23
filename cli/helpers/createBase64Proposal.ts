@@ -22,7 +22,6 @@ import {
   getVoterPDA,
   getVoterWeightPDA,
 } from 'VoteStakeRegistry/sdk/accounts'
-import { chargeFee, PROPOSAL_FEE } from 'actions/createChargeFee'
 
 export const createBase64Proposal = async (
   connection: Connection,
@@ -147,11 +146,6 @@ export const createBase64Proposal = async (
 
   const txChunks = chunk([...instructions, ...insertInstructions], 2)
 
-  const chargeFeeIxes = await chargeFee(
-    wallet.publicKey!,
-    PROPOSAL_FEE,
-    connection,
-  )
   await sendSignAndConfirmTransactions({
     connection,
     wallet,
@@ -163,15 +157,6 @@ export const createBase64Proposal = async (
         })),
         sequenceType: SequenceType.Sequential,
       })),
-      {
-        instructionsSet: [
-          ...chargeFeeIxes.map((x) => ({
-            transactionInstruction: x,
-            signers: [],
-          })),
-        ],
-        sequenceType: SequenceType.Sequential,
-      },
     ],
   })
   return proposalAddress

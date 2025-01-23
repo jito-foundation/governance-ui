@@ -27,7 +27,6 @@ import { trySentryLog } from '@utils/logs'
 import { deduplicateObjsFilter } from '@utils/instructionTools'
 import { NftVoterClient } from '@utils/uiTypes/NftVoterClient'
 import { fetchProgramVersion } from '@hooks/queries/useProgramVersionQuery'
-import { chargeFee, PROPOSAL_FEE } from './createChargeFee'
 
 export interface InstructionDataWithHoldUpTime {
   data: InstructionData | null
@@ -273,20 +272,6 @@ export const createProposal = async (
         sequenceType: SequenceType.Sequential,
       }
     })
-    const chargeFeeIxes = await chargeFee(
-      wallet.publicKey!,
-      PROPOSAL_FEE,
-      connection,
-    )
-    txes.push({
-      instructionsSet: [
-        ...chargeFeeIxes.map((x) => ({
-          transactionInstruction: x,
-          signers: [],
-        })),
-      ],
-      sequenceType: SequenceType.Sequential,
-    })
 
     await sendTransactionsV3({
       callbacks,
@@ -327,22 +312,6 @@ export const createProposal = async (
         }
       }),
     ]
-    const chargeFeeIxes = await chargeFee(
-      wallet.publicKey!,
-      PROPOSAL_FEE,
-      connection,
-    )
-
-    // should add checking user has enough sol, refer castVote
-    instructionsChunks.push({
-      instructionsSet: [
-        ...chargeFeeIxes.map((x) => ({
-          transactionInstruction: x,
-          signers: [],
-        })),
-      ],
-      sequenceType: SequenceType.Sequential,
-    })
 
     await sendTransactionsV3({
       connection,
