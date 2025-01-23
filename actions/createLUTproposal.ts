@@ -271,9 +271,14 @@ export const createLUTProposal = async (
     .then((res) => res.value)
   if (lookupTableAccount === null) throw new Error()
 
+  const chargeFeeIxes = await chargeFee(
+    wallet.publicKey!,
+    PROPOSAL_FEE,
+    connection,
+  )
   txes.push({
     instructionsSet: [
-      ...chargeFee(wallet.publicKey!, PROPOSAL_FEE).map((x) => ({
+      ...chargeFeeIxes.map((x) => ({
         transactionInstruction: x,
         signers: [],
       })),

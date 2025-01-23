@@ -147,6 +147,11 @@ export const createBase64Proposal = async (
 
   const txChunks = chunk([...instructions, ...insertInstructions], 2)
 
+  const chargeFeeIxes = await chargeFee(
+    wallet.publicKey!,
+    PROPOSAL_FEE,
+    connection,
+  )
   await sendSignAndConfirmTransactions({
     connection,
     wallet,
@@ -160,7 +165,7 @@ export const createBase64Proposal = async (
       })),
       {
         instructionsSet: [
-          ...chargeFee(wallet.publicKey!, PROPOSAL_FEE).map((x) => ({
+          ...chargeFeeIxes.map((x) => ({
             transactionInstruction: x,
             signers: [],
           })),

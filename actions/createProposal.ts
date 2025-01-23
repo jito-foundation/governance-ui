@@ -273,9 +273,14 @@ export const createProposal = async (
         sequenceType: SequenceType.Sequential,
       }
     })
+    const chargeFeeIxes = await chargeFee(
+      wallet.publicKey!,
+      PROPOSAL_FEE,
+      connection,
+    )
     txes.push({
       instructionsSet: [
-        ...chargeFee(wallet.publicKey!, PROPOSAL_FEE).map((x) => ({
+        ...chargeFeeIxes.map((x) => ({
           transactionInstruction: x,
           signers: [],
         })),
@@ -322,11 +327,16 @@ export const createProposal = async (
         }
       }),
     ]
+    const chargeFeeIxes = await chargeFee(
+      wallet.publicKey!,
+      PROPOSAL_FEE,
+      connection,
+    )
 
     // should add checking user has enough sol, refer castVote
     instructionsChunks.push({
       instructionsSet: [
-        ...chargeFee(wallet.publicKey!, PROPOSAL_FEE).map((x) => ({
+        ...chargeFeeIxes.map((x) => ({
           transactionInstruction: x,
           signers: [],
         })),
