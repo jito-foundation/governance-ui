@@ -363,10 +363,10 @@ const PlaceLimitOrder = ({
       tokenPriceService.fetchTokenPrices([...markets.map((x) => x.base)])
       setAvailableMarkets(markets)
     }
-    if (connection && assetAccounts.length) {
+    if (connection && !availableMarkets.length) {
       getMarkets()
     }
-  }, [connection, assetAccounts])
+  }, [connection, availableMarkets])
 
   useEffect(() => {
     handleSetInstructions(
