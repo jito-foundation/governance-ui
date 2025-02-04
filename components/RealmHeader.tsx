@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import useRealm from 'hooks/useRealm'
 import { ChartPieIcon, CogIcon, UsersIcon } from '@heroicons/react/outline'
-import { ChevronLeftIcon } from '@heroicons/react/solid'
+import { ChevronLeftIcon, IdentificationIcon } from '@heroicons/react/solid'
 import Link from 'next/link'
 import useQueryContext from 'hooks/useQueryContext'
 import { ExternalLinkIcon } from '@heroicons/react/outline'
@@ -81,6 +81,14 @@ const RealmHeader = () => {
               </a>
             </Link>
           )}
+          {realmData === null && realm && vsrMode !== "default" ?
+            <Link href={`https://mythic.today?realm=${realm.pubkey.toBase58()}`}>
+              <a className="flex items-center text-sm cursor-pointer default-transition text-fgd-2 hover:text-fgd-3">
+                <IdentificationIcon className="flex-shrink-0 w-5 h-5 mr-1" />
+                Add Metadata
+              </a>
+            </Link> 
+          : null}
           <Link href={fmtUrlWithCluster(`/dao/${symbol}/members`)}>
             <a className="flex items-center text-sm cursor-pointer default-transition text-fgd-2 hover:text-fgd-3">
               <UsersIcon className="flex-shrink-0 w-5 h-5 mr-1" />
@@ -103,6 +111,16 @@ const RealmHeader = () => {
           </a>
         </div>
       </div>
+      {vsrMode === 'default' && realm && realmData === null ?
+        <div className="w-full flex justify-end mt-4">
+          <Link href={`https://mythic.today?realm=${realm.pubkey.toBase58()}`}>
+            <a className="flex items-center text-sm cursor-pointer default-transition text-fgd-2 hover:text-fgd-3">
+              <IdentificationIcon className="flex-shrink-0 w-5 h-5 mr-1" />
+              Add Onchain Metadata
+            </a>
+          </Link> 
+        </div>
+      : null}
     </div>
   )
 }
