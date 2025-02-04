@@ -410,7 +410,7 @@ const PlaceLimitOrder = ({
       assetType: 'token',
     },
     {
-      label: 'Total Amount To Sell',
+      label: 'Total Amount',
       initialValue: form.amount,
       name: 'amount',
       type: InstructionInputType.INPUT,
