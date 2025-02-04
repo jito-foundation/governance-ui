@@ -38,6 +38,7 @@ import { JUPITER_REF } from './programs/jupiterRef'
 import { STAKE_SANCTUM_INSTRUCTIONS } from './programs/stakeSanctum'
 import { SYMMETRY_V2_INSTRUCTIONS } from './programs/symmetryV2'
 import { TOKEN_2022_INST } from './programs/token2022'
+import { MANIFEST_INSTRUCTIONS } from './programs/manifest'
 
 /**
  * Default governance program id instance
@@ -555,6 +556,7 @@ export const INSTRUCTION_DESCRIPTORS = {
   ...STAKE_SANCTUM_INSTRUCTIONS,
   ...JUPITER_REF,
   ...SYMMETRY_V2_INSTRUCTIONS,
+  ...MANIFEST_INSTRUCTIONS,
 }
 
 export async function getInstructionDescriptor(
