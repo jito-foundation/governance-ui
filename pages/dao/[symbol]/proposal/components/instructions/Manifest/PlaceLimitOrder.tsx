@@ -360,7 +360,7 @@ const PlaceLimitOrder = ({
           quote: x.quoteMint().toBase58(),
           base: x.baseMint().toBase58(),
         }))
-
+      tokenPriceService.fetchTokenPrices([...markets.map((x) => x.base)])
       setAvailableMarkets(markets)
     }
     if (connection && assetAccounts.length) {
@@ -420,17 +420,26 @@ const PlaceLimitOrder = ({
       initialValue: form.price,
       name: 'price',
       type: InstructionInputType.INPUT,
-      additionalComponent:
-        tryGetNumber(form.amount) &&
-        tryGetNumber(form.price) &&
-        baseInfo &&
-        quoteInfo ? (
+      additionalComponent: (
+        <>
           <div>
-            {form.side.name} {form.amount} {baseInfo?.symbol} for{' '}
-            {tryGetNumber(form.price) * tryGetNumber(form.amount)}{' '}
-            {quoteInfo?.symbol} ({form.price} {quoteInfo?.symbol} each)
+            market base price: $
+            {baseInfo
+              ? tokenPriceService.getUSDTokenPrice(baseInfo?.address)
+              : 0}
           </div>
-        ) : null,
+          {tryGetNumber(form.amount) &&
+          tryGetNumber(form.price) &&
+          baseInfo &&
+          quoteInfo ? (
+            <div>
+              {form.side.name} {form.amount} {baseInfo?.symbol} for{' '}
+              {tryGetNumber(form.price) * tryGetNumber(form.amount)}{' '}
+              {quoteInfo?.symbol} ({form.price} {quoteInfo?.symbol} each)
+            </div>
+          ) : null}
+        </>
+      ),
     },
     {
       label: 'Settling instruction holdup (minutes) - 20 minutes recommend',
