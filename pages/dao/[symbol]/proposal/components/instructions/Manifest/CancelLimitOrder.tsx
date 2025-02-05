@@ -25,6 +25,7 @@ import { getVaultAddress } from '@cks-systems/manifest-sdk/dist/cjs/utils'
 import { createCancelOrderInstruction } from '@cks-systems/manifest-sdk/dist/cjs/ui_wrapper/instructions'
 import { UiOpenOrder } from '@utils/uiTypes/manifest'
 import tokenPriceService from '@utils/services/tokenPrice'
+import { abbreviateAddress } from '@utils/formatting'
 
 const MANIFEST_PROGRAM_ID = new PublicKey(
   'MNFSTqtC93rEfYHB6hF82sKdZpUDFWkViLByLd1k1Ms',
@@ -271,17 +272,24 @@ const CancelLimitOrder = ({
 
       setOpenOrders(openOrders)
       setOpenOrdersList(
-        openOrders.map((x) => ({
-          name: `${tokenPriceService.getTokenInfo(x.baseMint.toBase58())
-            ?.name}/${tokenPriceService.getTokenInfo(x.quoteMint.toBase58())
-            ?.name} - ${
-            x.isBid ? 'Buy' : 'Sell'
-          } ${tokenPriceService.getTokenInfo(x.baseMint.toBase58())
-            ?.name} amount: ${x.numBaseTokens.toString()} price: ${
-            x.tokenPrice
-          }`,
-          value: x.clientOrderId.toString(),
-        })),
+        openOrders.map((x) => {
+          const baseInfo = tokenPriceService.getTokenInfo(x.baseMint.toBase58())
+          const quoteInfo = tokenPriceService.getTokenInfo(
+            x.quoteMint.toBase58(),
+          )
+          return {
+            name: `${
+              baseInfo?.name || abbreviateAddress(new PublicKey(x.baseMint))
+            }/${
+              quoteInfo?.name || abbreviateAddress(new PublicKey(x.quoteMint))
+            } - ${x.isBid ? 'Buy' : 'Sell'} ${tokenPriceService.getTokenInfo(
+              x.baseMint.toBase58(),
+            )?.name} amount: ${x.numBaseTokens.toString()} price: ${
+              x.tokenPrice
+            }`,
+            value: x.clientOrderId.toString(),
+          }
+        }),
       )
     }
     if (connection && form.governedAccount) {

@@ -14,6 +14,7 @@ import {
 import * as beet from '@metaplex-foundation/beet'
 import { AccountMetaData } from '@solana/spl-governance'
 import { Connection, PublicKey } from '@solana/web3.js'
+import { abbreviateAddress } from '@utils/formatting'
 import tokenPriceService from '@utils/services/tokenPrice'
 import { UiOpenOrder } from '@utils/uiTypes/manifest'
 
@@ -127,15 +128,26 @@ export const MANIFEST_INSTRUCTIONS = {
           <div>
             <div>
               Market name:{' '}
-              {`${tokenPriceService.getTokenInfo(
-                marketData.baseMint().toBase58(),
-              )?.name}/${tokenPriceService.getTokenInfo(
-                marketData.quoteMint().toBase58(),
-              )?.name}`}
+              {`${
+                tokenPriceService.getTokenInfo(marketData.baseMint().toBase58())
+                  ?.name || abbreviateAddress(marketData.baseMint())
+              }/${
+                tokenPriceService.getTokenInfo(
+                  marketData.quoteMint().toBase58(),
+                )?.name || abbreviateAddress(marketData.quoteMint())
+              }`}
             </div>
             <div>Side: {side}</div>
-            <div>Quote Token: {quoteTokenInfo?.symbol}</div>
-            <div>Base Token: {baseTokenInfo?.symbol}</div>
+            <div>
+              Quote Token:{' '}
+              {quoteTokenInfo?.symbol ||
+                abbreviateAddress(marketData.quoteMint())}
+            </div>
+            <div>
+              Base Token:{' '}
+              {baseTokenInfo?.symbol ||
+                abbreviateAddress(marketData.baseMint())}
+            </div>
             <div>
               {side} {uiAmount} {mint?.symbol} for {price * uiAmount}{' '}
               {currency?.symbol} ({price} {currency?.symbol} each)
@@ -217,11 +229,23 @@ export const MANIFEST_INSTRUCTIONS = {
           return (
             <div>
               <div>
-                Market name: {`${baseTokenInfo?.name}/${quoteTokenInfo?.name}`}
+                Market name:{' '}
+                {`${
+                  baseTokenInfo?.name || abbreviateAddress(openOrder.baseMint)
+                }/${
+                  quoteTokenInfo?.name || abbreviateAddress(openOrder.quoteMint)
+                }`}
               </div>
               <div>Side: {side}</div>
-              <div>Quote Token: {quoteTokenInfo?.symbol}</div>
-              <div>Base Token: {baseTokenInfo?.symbol}</div>
+              <div>
+                Quote Token:{' '}
+                {quoteTokenInfo?.symbol ||
+                  abbreviateAddress(openOrder.quoteMint)}
+              </div>
+              <div>
+                Base Token:{' '}
+                {baseTokenInfo?.symbol || abbreviateAddress(openOrder.baseMint)}
+              </div>
               <div>clientOrderId: {params.clientOrderId.toString()}</div>
             </div>
           )

@@ -31,6 +31,7 @@ import {
 import { toNative } from '@blockworks-foundation/mango-v4'
 import { getVaultAddress } from '@cks-systems/manifest-sdk/dist/cjs/utils'
 import { createSettleFundsInstruction } from '@cks-systems/manifest-sdk/dist/cjs/ui_wrapper/instructions'
+import { abbreviateAddress } from '@utils/formatting'
 
 const FEE_WALLET = new PublicKey('4GbrVmMPYyWaHsfRw7ZRnKzb98McuPovGqr27zmpNbhh')
 
@@ -352,14 +353,24 @@ const PlaceLimitOrder = ({
           }),
         )
         .sort((a, b) => Number(b.quoteVolume()) - Number(a.quoteVolume()))
-        .map((x) => ({
-          name: `${tokenPriceService.getTokenInfo(x.baseMint().toBase58())
-            ?.name}/${tokenPriceService.getTokenInfo(x.quoteMint().toBase58())
-            ?.name}`,
-          value: x.address.toBase58(),
-          quote: x.quoteMint().toBase58(),
-          base: x.baseMint().toBase58(),
-        }))
+        .map((x) => {
+          const baseInfo = tokenPriceService.getTokenInfo(
+            x.baseMint().toBase58(),
+          )
+          const quoteInfo = tokenPriceService.getTokenInfo(
+            x.quoteMint().toBase58(),
+          )
+          return {
+            name: `${
+              baseInfo?.name || abbreviateAddress(new PublicKey(x.baseMint()))
+            }/${
+              quoteInfo?.name || abbreviateAddress(new PublicKey(x.quoteMint()))
+            }`,
+            value: x.address.toBase58(),
+            quote: x.quoteMint().toBase58(),
+            base: x.baseMint().toBase58(),
+          }
+        })
       tokenPriceService.fetchTokenPrices([...markets.map((x) => x.base)])
       setAvailableMarkets(markets)
     }
