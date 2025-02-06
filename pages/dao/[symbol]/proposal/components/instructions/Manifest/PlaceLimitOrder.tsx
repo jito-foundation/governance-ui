@@ -54,6 +54,7 @@ interface PlaceLimitOrderForm {
     value: string
   }
   settlingHoldUp: number
+  searchMarket: string
 }
 
 const PlaceLimitOrder = ({
@@ -93,6 +94,7 @@ const PlaceLimitOrder = ({
     price: '0',
     side: sideOptions[0],
     settlingHoldUp: 20,
+    searchMarket: '',
   })
   const [formErrors, setFormErrors] = useState({})
   const { handleSetInstructions } = useContext(NewProposalContext)
@@ -344,7 +346,22 @@ const PlaceLimitOrder = ({
       const marketAccounts = await ManifestClient.getMarketProgramAccounts(
         connection.current,
       )
-
+      console.log(
+        marketAccounts
+          .map((x) =>
+            Market.loadFromBuffer({
+              address: x.pubkey,
+              buffer: x.account.data,
+            }),
+          )
+          .filter(
+            (x) =>
+              x.quoteMint().toBase58() ===
+                'FLJYGHpCCcfYUdzhcfHSeSd2peb5SMajNWaCsRnhpump' ||
+              x.baseMint().toBase58() ===
+                'FLJYGHpCCcfYUdzhcfHSeSd2peb5SMajNWaCsRnhpump',
+          ),
+      )
       const markets = marketAccounts
         .map((x) =>
           Market.loadFromBuffer({
@@ -362,9 +379,10 @@ const PlaceLimitOrder = ({
           )
           return {
             name: `${
-              baseInfo?.name || abbreviateAddress(new PublicKey(x.baseMint()))
+              baseInfo?.symbol || abbreviateAddress(new PublicKey(x.baseMint()))
             }/${
-              quoteInfo?.name || abbreviateAddress(new PublicKey(x.quoteMint()))
+              quoteInfo?.symbol ||
+              abbreviateAddress(new PublicKey(x.quoteMint()))
             }`,
             value: x.address.toBase58(),
             quote: x.quoteMint().toBase58(),
@@ -394,11 +412,26 @@ const PlaceLimitOrder = ({
   })
   const inputs: InstructionInput[] = [
     {
+      label: 'Search market by mint or symbol',
+      initialValue: form.searchMarket,
+      name: 'searchMarket',
+      type: InstructionInputType.INPUT,
+    },
+    {
       label: 'Market',
       initialValue: form.market,
       name: 'market',
       type: InstructionInputType.SELECT,
-      options: availableMarkets,
+      options: availableMarkets.filter((x) => {
+        if (form.searchMarket) {
+          return (
+            x.base.toLowerCase().includes(form.searchMarket.toLowerCase()) ||
+            x.quote.toLowerCase().includes(form.searchMarket.toLowerCase()) ||
+            x.name.toLowerCase().includes(form.searchMarket.toLowerCase())
+          )
+        }
+        return true
+      }),
     },
     {
       label: 'Side',

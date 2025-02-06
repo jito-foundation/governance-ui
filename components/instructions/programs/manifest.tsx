@@ -130,11 +130,11 @@ export const MANIFEST_INSTRUCTIONS = {
               Market name:{' '}
               {`${
                 tokenPriceService.getTokenInfo(marketData.baseMint().toBase58())
-                  ?.name || abbreviateAddress(marketData.baseMint())
+                  ?.symbol || abbreviateAddress(marketData.baseMint())
               }/${
                 tokenPriceService.getTokenInfo(
                   marketData.quoteMint().toBase58(),
-                )?.name || abbreviateAddress(marketData.quoteMint())
+                )?.symbol || abbreviateAddress(marketData.quoteMint())
               }`}
             </div>
             <div>Side: {side}</div>
@@ -231,9 +231,10 @@ export const MANIFEST_INSTRUCTIONS = {
               <div>
                 Market name:{' '}
                 {`${
-                  baseTokenInfo?.name || abbreviateAddress(openOrder.baseMint)
+                  baseTokenInfo?.symbol || abbreviateAddress(openOrder.baseMint)
                 }/${
-                  quoteTokenInfo?.name || abbreviateAddress(openOrder.quoteMint)
+                  quoteTokenInfo?.symbol ||
+                  abbreviateAddress(openOrder.quoteMint)
                 }`}
               </div>
               <div>Side: {side}</div>

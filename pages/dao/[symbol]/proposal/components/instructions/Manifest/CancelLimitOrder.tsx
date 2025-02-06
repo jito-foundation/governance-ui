@@ -279,12 +279,12 @@ const CancelLimitOrder = ({
           )
           return {
             name: `${
-              baseInfo?.name || abbreviateAddress(new PublicKey(x.baseMint))
+              baseInfo?.symbol || abbreviateAddress(new PublicKey(x.baseMint))
             }/${
-              quoteInfo?.name || abbreviateAddress(new PublicKey(x.quoteMint))
+              quoteInfo?.symbol || abbreviateAddress(new PublicKey(x.quoteMint))
             } - ${x.isBid ? 'Buy' : 'Sell'} ${tokenPriceService.getTokenInfo(
               x.baseMint.toBase58(),
-            )?.name} amount: ${x.numBaseTokens.toString()} price: ${
+            )?.symbol} amount: ${x.numBaseTokens.toString()} price: ${
               x.tokenPrice
             }`,
             value: x.clientOrderId.toString(),
