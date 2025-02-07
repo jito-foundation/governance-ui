@@ -38,10 +38,10 @@ const FEE_WALLET = new PublicKey('4GbrVmMPYyWaHsfRw7ZRnKzb98McuPovGqr27zmpNbhh')
 
 interface CancelLimitOrderForm {
   governedAccount: AssetAccount | null
-  openOrder: { name: string; value: string } | null
+  unsettled: { name: string; value: string } | null
 }
 
-const CancelLimitOrder = ({
+const SettleToken = ({
   index,
   governance,
 }: {
@@ -52,15 +52,15 @@ const CancelLimitOrder = ({
   const connection = useLegacyConnectionContext()
 
   const { assetAccounts } = useGovernanceAssets()
-  const [openOrders, setOpenOrders] = useState<UiOpenOrder[]>([])
-  const [openOrdersList, setOpenOrdersList] = useState<
+
+  const [unsettledList, setUnsettledList] = useState<
     { name: string; value: string }[]
   >([])
 
   const shouldBeGoverned = !!(index !== 0 && governance)
   const [form, setForm] = useState<CancelLimitOrderForm>({
     governedAccount: null,
-    openOrder: null,
+    unsettled: null,
   })
   const [formErrors, setFormErrors] = useState({})
   const { handleSetInstructions } = useContext(NewProposalContext)
@@ -86,11 +86,6 @@ const CancelLimitOrder = ({
       form.governedAccount?.governance?.account &&
       wallet?.publicKey
     ) {
-      const order = openOrders.find(
-        (x) => x.clientOrderId.toString() === form.openOrder?.value,
-      )
-      const isBid = order?.isBid
-
       const owner = form.governedAccount.isSol
         ? form.governedAccount.extensions.transferAddress!
         : form.governedAccount.extensions.token!.account.owner!
@@ -101,7 +96,7 @@ const CancelLimitOrder = ({
       )
       const market = await Market.loadFromAddress({
         connection: connection.current,
-        address: new PublicKey(order!.market),
+        address: new PublicKey(form.unsettled!.value),
       })
       const quoteMint = market.quoteMint()
       const baseMint = market.baseMint()
@@ -176,45 +171,6 @@ const CancelLimitOrder = ({
           )
         prerequisiteInstructions.push(baseAtaCreateIx)
       }
-
-      const mint = isBid ? quoteMint : baseMint
-      const cancelOrderIx: TransactionInstruction =
-        createCancelOrderInstruction(
-          {
-            wrapperState: wrapperPk,
-            owner: owner,
-            traderTokenAccount: getAssociatedTokenAddressSync(
-              mint,
-              owner,
-              true,
-            ),
-            market: market.address,
-            vault: getVaultAddress(market.address, mint),
-            mint: mint,
-            systemProgram: SYSTEM_PROGRAM_ID,
-            tokenProgram: TOKEN_PROGRAM_ID,
-            manifestProgram: MANIFEST_PROGRAM_ID,
-          },
-          {
-            params: { clientOrderId: order!.clientOrderId },
-          },
-        )
-
-      ixes.push({
-        serializedInstruction: serializeInstructionToBase64({
-          ...cancelOrderIx,
-          keys: cancelOrderIx.keys.map((x, idx) => {
-            if (idx === 1) {
-              return {
-                ...x,
-                isWritable: true,
-              }
-            }
-            return x
-          }),
-        }),
-        holdUpTime: 0,
-      })
 
       const settleOrderIx: TransactionInstruction =
         createSettleFundsInstruction(
@@ -308,43 +264,31 @@ const CancelLimitOrder = ({
         Market.loadFromBuffer({ address, buffer: allMarketInfos[i]!.data }),
       )
 
-      const openOrders = allMarkets.flatMap((m) => {
-        const openOrdersForMarket = wrapper.openOrdersForMarket(m.address)!
+      const unsettled = await wrapper.unsettledBalances(allMarkets)
 
-        return m
-          .openOrders()
-          .filter((x) => x.trader.equals(owner))
-          .map((oo) => ({
-            ...oo,
-            baseMint: m.baseMint(),
-            quoteMint: m.quoteMint(),
-            market: m.address,
-            ...(openOrdersForMarket.find(
-              (ooForMarket) =>
-                ooForMarket.orderSequenceNumber.toString() ===
-                oo.sequenceNumber.toString(),
-            ) || {}),
-          })) as UiOpenOrder[]
-      })
-
-      setOpenOrders(openOrders)
-      setOpenOrdersList(
-        openOrders.map((x) => {
-          const baseInfo = tokenPriceService.getTokenInfo(x.baseMint.toBase58())
+      setUnsettledList(
+        unsettled.map((x) => {
+          const baseInfo = tokenPriceService.getTokenInfo(
+            x.market.baseMint().toBase58(),
+          )
           const quoteInfo = tokenPriceService.getTokenInfo(
-            x.quoteMint.toBase58(),
+            x.market.quoteMint().toBase58(),
           )
           return {
-            name: `${
-              baseInfo?.symbol || abbreviateAddress(new PublicKey(x.baseMint))
+            name: `Market: ${
+              baseInfo?.symbol ||
+              abbreviateAddress(new PublicKey(x.market.baseMint().toBase58()))
             }/${
-              quoteInfo?.symbol || abbreviateAddress(new PublicKey(x.quoteMint))
-            } - ${x.isBid ? 'Buy' : 'Sell'} ${tokenPriceService.getTokenInfo(
-              x.baseMint.toBase58(),
-            )?.symbol} amount: ${x.numBaseTokens.toString()} price: ${
-              x.tokenPrice
+              quoteInfo?.symbol ||
+              abbreviateAddress(new PublicKey(x.market.quoteMint().toBase58()))
+            } Amounts: ${x.numBaseTokens} ${
+              baseInfo?.symbol ||
+              abbreviateAddress(new PublicKey(x.market.baseMint().toBase58()))
+            } / ${x.numQuoteTokens} ${
+              quoteInfo?.symbol ||
+              abbreviateAddress(new PublicKey(x.market.quoteMint().toBase58()))
             }`,
-            value: x.clientOrderId.toString(),
+            value: x.market.address.toBase58(),
           }
         }),
       )
@@ -380,11 +324,11 @@ const CancelLimitOrder = ({
       assetType: 'token',
     },
     {
-      label: 'Open Order',
-      initialValue: form.openOrder,
-      name: 'openOrder',
+      label: 'Unsettled',
+      initialValue: form.unsettled,
+      name: 'unsettled',
       type: InstructionInputType.SELECT,
-      options: openOrdersList,
+      options: unsettledList,
     },
   ]
 
@@ -403,4 +347,4 @@ const CancelLimitOrder = ({
   )
 }
 
-export default CancelLimitOrder
+export default SettleToken

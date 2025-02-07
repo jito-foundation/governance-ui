@@ -338,6 +338,7 @@ export enum Instructions {
   DelegateStake,
   RemoveStakeLock,
   PlaceLimitOrder,
+  SettleToken,
   CancelLimitOrder,
   Grant,
   InitSolendObligationAccount,

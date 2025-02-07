@@ -147,6 +147,7 @@ import SymmetryDeposit from './components/instructions/Symmetry/SymmetryDeposit'
 import SymmetryWithdraw from './components/instructions/Symmetry/SymmetryWithdraw'
 import PythUpdatePoolAuthority from './components/instructions/Pyth/PythUpdatePoolAuthority'
 import PlaceLimitOrder from './components/instructions/Manifest/PlaceLimitOrder'
+import SettleToken from './components/instructions/Manifest/SettleToken'
 import CancelLimitOrder from './components/instructions/Manifest/CancelLimitOrder'
 import WithdrawFees from './components/instructions/Token2022/WithdrawFees'
 
@@ -562,6 +563,7 @@ const New = () => {
       [Instructions.DelegateStake]: DelegateStake,
       [Instructions.RemoveStakeLock]: RemoveLockup,
       [Instructions.PlaceLimitOrder]: PlaceLimitOrder,
+      [Instructions.SettleToken]: SettleToken,
       [Instructions.CancelLimitOrder]: CancelLimitOrder,
       [Instructions.SplitStake]: SplitStake,
       [Instructions.DifferValidatorStake]: null,
