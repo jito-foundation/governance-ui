@@ -33,7 +33,8 @@
     "@blockworks-foundation/mango-v4": "0.33.7",
     "@blockworks-foundation/mango-v4-settings": "0.14.24",
     "@blockworks-foundation/mangolana": "0.0.18",
-    "@bonfida/spl-name-service": "0.1.47",
+    "@bonfida/spl-name-service": "3.0.1",
+    "@bundlr-network/client": "0.7.15",
     "@carbon/icons-react": "11.7.0",
     "@civic/profile": "^0.5.0-beta.1",
     "@civic/solana-gateway-react": "^0.16.10",
@@ -250,7 +251,8 @@
     "dset": "3.1.2",
     "**/@solana/spl-token-registry/cross-fetch/node-fetch": "2.6.7",
     "**/@blockworks-foundation/mangolana/node-fetch": "npm:@blockworks-foundation/node-fetch@2.6.11",
-    "@bonfida/spl-name-service": "0.1.47",
+    "@bonfida/spl-name-service": "3.0.1",
+    "@bundlr-network/client": "0.7.15",
     "@carbon/icons-react": "11.7.0",
     "@cardinal/namespaces-components": "2.5.5",
     "crypto-js": ">=4.1.1",
@@ -270,6 +272,7 @@
   "lavamoat": {
     "allowScripts": {
       "@metaplex-foundation/js>@bundlr-network/client>arbundles>secp256k1": true,
+      "@bundlr-network/client>arbundles>secp256k1": true,
       "@irys/web-upload>@irys/bundles>keccak": true,
       "@irys/web-upload>@irys/bundles>secp256k1": true,
       "$root$": false,
