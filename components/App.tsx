@@ -343,20 +343,24 @@ const Telemetry = () => {
   const { wallet } = useWallet()
 
   const telemetryProps = useMemo(() => {
-    const props = {
-      walletProvider: wallet?.adapter.name ?? 'unknown',
-      walletConnected: (wallet?.adapter.connected ?? 'false').toString(),
-    }
+    if (typeof document !== 'undefined') {
+      const props = {
+        walletProvider: wallet?.adapter.name ?? 'unknown',
+        walletConnected: (wallet?.adapter.connected ?? 'false').toString(),
+      }
 
-    // Hack to update script tag
-    const el = document.getElementById('plausible')
-    if (el) {
-      Object.entries(props).forEach(([key, value]) => {
-        el.setAttribute(`event-${key}`, value)
-      })
-    }
+      // Hack to update script tag
+      const el = document.getElementById('plausible')
+      if (el) {
+        Object.entries(props).forEach(([key, value]) => {
+          el.setAttribute(`event-${key}`, value)
+        })
+      }
 
-    return props
+      return props
+    } else {
+      return {}
+    }
   }, [wallet?.adapter.name, wallet?.adapter.connected])
 
   return (
