@@ -112,6 +112,12 @@ export default function useCreateProposal() {
       ['Approve'],
       votingClient,
     )
+    plausible('ProposalCreated', {
+      props: {
+        realm: realm.pubkey.toBase58(),
+        title: title,
+      },
+    })
     queryClient.invalidateQueries({
       queryKey: proposalQueryKeys.all(connection.endpoint),
     })
