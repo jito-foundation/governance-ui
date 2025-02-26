@@ -49,7 +49,7 @@ export const useMembersQuery = () => {
 
   const query = useQuery({
     enabled,
-    queryKey: [],
+    queryKey: ['all-dao-members'],
     queryFn: async () => {
       if (!enabled) throw new Error()
 
