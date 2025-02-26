@@ -39,6 +39,7 @@ import {
   GoverningTokenType,
 } from '@solana/spl-governance'
 import { TOKEN_2022_PROGRAM_ID } from '@solana/spl-token-new'
+import { usePlausible } from 'next-plausible'
 
 export const FORM_NAME = 'tokenized'
 
@@ -49,7 +50,10 @@ type CommunityTokenForm = BasicDetails &
   InviteMembers
 
 // All transformation of form data to business logical program inputs should occur here
-const transformFormData2RealmCreation = (formData: CommunityTokenForm, pluginList?: PluginName[]) => {
+const transformFormData2RealmCreation = (
+  formData: CommunityTokenForm,
+  pluginList?: PluginName[],
+) => {
   const createCouncil = formData.addCouncil ?? false
   const existingCouncilMintPk = formData.councilTokenMintAddress
     ? new PublicKey(formData.councilTokenMintAddress)
@@ -61,7 +65,8 @@ const transformFormData2RealmCreation = (formData: CommunityTokenForm, pluginLis
   // until after they are added, so that the plugins can be added by the current wallet, without going through
   // a proposal.
   // If more plugins are included in the Community token flow, then we should generalise this
-  const shouldSkipSettingRealmAuthority = (formData.isQuadratic || pluginList?.includes('token_voter')) ?? false
+  const shouldSkipSettingRealmAuthority =
+    (formData.isQuadratic || pluginList?.includes('token_voter')) ?? false
 
   const params = {
     ...{
@@ -128,6 +133,8 @@ export default function CommunityTokenWizard() {
   const { push } = useRouter()
   const { fmtUrlWithCluster } = useQueryContext()
   const [requestPending, setRequestPending] = useState(false)
+  const plausible = usePlausible()
+
   const steps = [
     {
       Form: BasicDetailsForm,
@@ -174,19 +181,20 @@ export default function CommunityTokenWizard() {
         throw new Error('No valid wallet connected')
       }
 
-      const mintAccountInfo = formData.communityTokenMintAddress ?
-        await connection.current.getAccountInfo(new PublicKey(formData.communityTokenMintAddress)) :
-        undefined 
+      const mintAccountInfo = formData.communityTokenMintAddress
+        ? await connection.current.getAccountInfo(
+            new PublicKey(formData.communityTokenMintAddress),
+          )
+        : undefined
 
       // A Quadratic Voting DAO includes two plugins:
       // - Gateway Plugin: sybil resistance protection (by default provided by civic.com)
       // - QV Plugin: adapt the vote weight according to the quadratic formula: ax^1/2 + bx + c
-      const pluginList: PluginName[] = 
-        formData.isQuadratic ? 
-          ['gateway', 'QV'] :
-        mintAccountInfo && mintAccountInfo.owner.equals(TOKEN_2022_PROGRAM_ID) ?
-          ['token_voter'] :
-          []
+      const pluginList: PluginName[] = formData.isQuadratic
+        ? ['gateway', 'QV']
+        : mintAccountInfo && mintAccountInfo.owner.equals(TOKEN_2022_PROGRAM_ID)
+        ? ['token_voter']
+        : []
 
       const results = await createTokenizedRealm({
         wallet,
@@ -196,6 +204,11 @@ export default function CommunityTokenWizard() {
       })
 
       if (results) {
+        plausible('DaoCreated', {
+          props: {
+            realm: results.realmPk.toBase58(),
+          },
+        })
         push(
           fmtUrlWithCluster(`/dao/${results.realmPk.toBase58()}`),
           undefined,

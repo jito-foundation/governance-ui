@@ -29,6 +29,7 @@ import {
 } from '@solana/spl-governance'
 import useWalletOnePointOh from '@hooks/useWalletOnePointOh'
 import useLegacyConnectionContext from '@hooks/useLegacyConnectionContext'
+import { usePlausible } from 'next-plausible'
 
 export const FORM_NAME = 'multisig'
 
@@ -99,6 +100,7 @@ export default function MultiSigWizard() {
   const { push } = useRouter()
   const { fmtUrlWithCluster } = useQueryContext()
   const [requestPending, setRequestPending] = useState(false)
+  const plausible = usePlausible()
 
   const steps = [
     {
@@ -143,6 +145,11 @@ export default function MultiSigWizard() {
       })
 
       if (results) {
+        plausible('DaoCreated', {
+          props: {
+            realm: results.realmPk.toBase58(),
+          },
+        })
         push(
           fmtUrlWithCluster(`/dao/${results.realmPk.toBase58()}`),
           undefined,
