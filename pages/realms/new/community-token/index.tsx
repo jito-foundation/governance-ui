@@ -40,6 +40,7 @@ import {
 } from '@solana/spl-governance'
 import { TOKEN_2022_PROGRAM_ID } from '@solana/spl-token-new'
 import { usePlausible } from 'next-plausible'
+import dayjs from 'dayjs'
 
 export const FORM_NAME = 'tokenized'
 
@@ -207,6 +208,12 @@ export default function CommunityTokenWizard() {
         plausible('DaoCreated', {
           props: {
             realm: results.realmPk.toBase58(),
+            params: JSON.stringify({
+              realm: results.realmPk.toBase58(),
+              cluster: connection.cluster,
+              date: dayjs(new Date()).format('DD-MM-YYYY HH:MM'),
+              link: fmtUrlWithCluster(`/dao/${results.realmPk.toBase58()}`),
+            }),
           },
         })
         push(
