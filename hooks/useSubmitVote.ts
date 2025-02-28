@@ -159,7 +159,11 @@ export const useSubmitVote = () => {
           relevantDelegators,
           ownVoterWeight?.value,
         )
-        plausible('VoteCasted')
+        try {
+          plausible('VoteCasted')
+          // eslint-disable-next-line no-empty
+        } catch (e) {}
+
         queryClient.invalidateQueries({
           queryKey: proposalQueryKeys.all(connection.current.rpcEndpoint),
         })

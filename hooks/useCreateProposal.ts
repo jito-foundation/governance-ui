@@ -112,12 +112,16 @@ export default function useCreateProposal() {
       ['Approve'],
       votingClient,
     )
-    plausible('ProposalCreated', {
-      props: {
-        realm: realm.pubkey.toBase58(),
-        title: title,
-      },
-    })
+    try {
+      plausible('ProposalCreated', {
+        props: {
+          realm: realm.pubkey.toBase58(),
+          title: title,
+        },
+      })
+      // eslint-disable-next-line no-empty
+    } catch (e) {}
+
     queryClient.invalidateQueries({
       queryKey: proposalQueryKeys.all(connection.endpoint),
     })
@@ -214,12 +218,16 @@ export default function useCreateProposal() {
       options,
       votingClient,
     )
-    plausible('ProposalCreated', {
-      props: {
-        realm: realm.pubkey.toBase58(),
-        title: title,
-      },
-    })
+    try {
+      plausible('ProposalCreated', {
+        props: {
+          realm: realm.pubkey.toBase58(),
+          title: title,
+        },
+      })
+      // eslint-disable-next-line no-empty
+    } catch (e) {}
+
     queryClient.invalidateQueries({
       queryKey: proposalQueryKeys.all(connection.endpoint),
     })

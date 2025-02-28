@@ -205,17 +205,21 @@ export default function CommunityTokenWizard() {
       })
 
       if (results) {
-        plausible('DaoCreated', {
-          props: {
-            realm: results.realmPk.toBase58(),
-            params: JSON.stringify({
+        try {
+          plausible('DaoCreated', {
+            props: {
               realm: results.realmPk.toBase58(),
-              cluster: connection.cluster,
-              date: dayjs(new Date()).format('DD-MM-YYYY HH:MM'),
-              link: fmtUrlWithCluster(`/dao/${results.realmPk.toBase58()}`),
-            }),
-          },
-        })
+              params: JSON.stringify({
+                realm: results.realmPk.toBase58(),
+                cluster: connection.cluster,
+                date: dayjs(new Date()).format('DD-MM-YYYY HH:MM'),
+                link: fmtUrlWithCluster(`/dao/${results.realmPk.toBase58()}`),
+              }),
+            },
+          })
+          // eslint-disable-next-line no-empty
+        } catch (e) {}
+
         push(
           fmtUrlWithCluster(`/dao/${results.realmPk.toBase58()}`),
           undefined,

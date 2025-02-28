@@ -53,12 +53,15 @@ const ConnectWalletButton = (props) => {
         await disconnect()
       } else {
         await connect()
-        plausible('ConnectWallet', {
-          props: {
-            walletConnected: wallet?.adapter?.publicKey?.toString(),
-            walletProvider: wallet?.adapter?.name,
-          },
-        })
+        try {
+          plausible('ConnectWallet', {
+            props: {
+              walletConnected: wallet?.adapter?.publicKey?.toString(),
+              walletProvider: wallet?.adapter?.name,
+            },
+          })
+          // eslint-disable-next-line no-empty
+        } catch (e) {}
       }
     } catch (e: any) {
       if (e.name === 'WalletNotReadyError') {
