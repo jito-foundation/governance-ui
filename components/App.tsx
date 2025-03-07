@@ -15,6 +15,7 @@ import tokenPriceService from '@utils/services/tokenPrice'
 import TransactionLoader from '@components/TransactionLoader'
 import useDepositStore from 'VoteStakeRegistry/stores/useDepositStore'
 import useRealm from '@hooks/useRealm'
+import { DefiProvider } from '@hub/providers/Defi'
 import NftVotingCountingModal from '@components/NftVotingCountingModal'
 import { getResourcePathPart } from '@tools/core/resources'
 import useSerumGovStore from 'stores/useSerumGovStore'
@@ -24,6 +25,7 @@ import { useRealmQuery } from '@hooks/queries/realm'
 import { useRealmConfigQuery } from '@hooks/queries/realmConfig'
 import {
   ConnectionProvider,
+  useWallet,
   WalletProvider,
 } from '@solana/wallet-adapter-react'
 import useLegacyConnectionContext from '@hooks/useLegacyConnectionContext'
@@ -38,6 +40,7 @@ import { useAsync } from 'react-async-hook'
 import { useVsrClient } from '../VoterWeightPlugins/useVsrClient'
 import { useRealmVoterWeightPlugins } from '@hooks/useRealmVoterWeightPlugins'
 import TermsPopupModal from './TermsPopup'
+import PlausibleProvider from 'next-plausible'
 
 const Notifications = dynamic(() => import('../components/Notification'), {
   ssr: false,
@@ -60,7 +63,7 @@ const GoogleTag = React.memo(
       </React.Fragment>
     )
   },
-  () => true
+  () => true,
 )
 
 interface Props {
@@ -74,7 +77,7 @@ export function App(props: Props) {
 
   const endpoint = useMemo(
     () => (cluster === 'devnet' ? DEVNET_RPC : MAINNET_RPC),
-    [cluster]
+    [cluster],
   )
 
   const supportedWallets = useMemo(
@@ -82,7 +85,7 @@ export function App(props: Props) {
       detectEmbeddedInSquadsIframe()
         ? [new SquadsEmbeddedWalletAdapter()]
         : WALLET_PROVIDERS.map((provider) => provider.adapter),
-    []
+    [],
   )
 
   return (
@@ -105,14 +108,14 @@ export function AppContents(props: Props) {
   handleRouterHistory()
   useHandleGovernanceAssetsStore()
   useEffect(() => {
-    tokenPriceService.fetchSolanaTokenList()
+    tokenPriceService.fetchSolanaTokenListV2()
   }, [])
 
   const { getOwnedDeposits, resetDepositState } = useDepositStore()
 
   const { plugins } = useRealmVoterWeightPlugins('community')
   const usesVsr = plugins?.voterWeight.find((plugin) =>
-    VSR_PLUGIN_PKS.includes(plugin.programId.toString())
+    VSR_PLUGIN_PKS.includes(plugin.programId.toString()),
   )
   const ownTokenRecord = useUserCommunityTokenOwnerRecord().data?.result
 
@@ -126,7 +129,7 @@ export function AppContents(props: Props) {
   const router = useRouter()
   const { cluster } = router.query
   const updateSerumGovAccounts = useSerumGovStore(
-    (s) => s.actions.updateSerumGovAccounts
+    (s) => s.actions.updateSerumGovAccounts,
   )
   const { vsrClient } = useVsrClient()
 
@@ -323,15 +326,55 @@ export function AppContents(props: Props) {
       <ErrorBoundary>
         <ThemeProvider defaultTheme="Dark">
           <GatewayProvider>
+            <Telemetry></Telemetry>
             <NavBar />
             <Notifications />
             <TransactionLoader></TransactionLoader>
             <NftVotingCountingModal />
-            <PageBodyContainer>{props.children}</PageBodyContainer>
+            <PageBodyContainer>
+              <DefiProvider>{props.children}</DefiProvider>
+            </PageBodyContainer>
             <TermsPopupModal />
           </GatewayProvider>
         </ThemeProvider>
       </ErrorBoundary>
     </div>
+  )
+}
+
+const Telemetry = () => {
+  const { wallet } = useWallet()
+
+  const telemetryProps = useMemo(() => {
+    if (typeof document !== 'undefined') {
+      const props = {
+        walletProvider: wallet?.adapter.name ?? 'unknown',
+        walletConnected: (wallet?.adapter.connected ?? 'false').toString(),
+      }
+
+      // Hack to update script tag
+      const el = document.getElementById('plausible')
+      if (el) {
+        Object.entries(props).forEach(([key, value]) => {
+          el.setAttribute(`event-${key}`, value)
+        })
+      }
+
+      return props
+    } else {
+      return {}
+    }
+  }, [wallet?.adapter.name, wallet?.adapter.connected])
+
+  return (
+    <PlausibleProvider
+      domain="realms.today"
+      customDomain="https://pl.cabana-exchange.cloud"
+      trackLocalhost={true}
+      selfHosted={true}
+      enabled={true}
+      scriptProps={{ id: 'plausible' }}
+      pageviewProps={telemetryProps}
+    />
   )
 }

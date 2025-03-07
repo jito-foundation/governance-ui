@@ -29,6 +29,7 @@ export default async function createMultisigWallet({
   } = await prepareRealmCreation({
     connection,
     wallet,
+    isMultiSig: true,
     ...params,
   })
 
@@ -47,7 +48,7 @@ export default async function createMultisigWallet({
           const signers = allSigners.filter((x) =>
             txInst.keys
               .filter((key) => key.isSigner)
-              .find((key) => key.pubkey.equals(x.publicKey))
+              .find((key) => key.pubkey.equals(x.publicKey)),
           )
           return {
             transactionInstruction: txInst,

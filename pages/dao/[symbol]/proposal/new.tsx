@@ -26,7 +26,7 @@ import useGovernanceAssets, {
 } from '@hooks/useGovernanceAssets'
 import useQueryContext from '@hooks/useQueryContext'
 import useRealm from '@hooks/useRealm'
-import { getTimestampFromDays } from '@tools/sdk/units'
+import { getTimestampFromDays, getTimestampFromMinutes } from '@tools/sdk/units'
 import { formValidation, isFormValid } from '@utils/formValidation'
 import {
   ComponentInstructionData,
@@ -146,6 +146,10 @@ import SymmetryEditBasket from './components/instructions/Symmetry/SymmetryEditB
 import SymmetryDeposit from './components/instructions/Symmetry/SymmetryDeposit'
 import SymmetryWithdraw from './components/instructions/Symmetry/SymmetryWithdraw'
 import PythUpdatePoolAuthority from './components/instructions/Pyth/PythUpdatePoolAuthority'
+import PlaceLimitOrder from './components/instructions/Manifest/PlaceLimitOrder'
+import SettleToken from './components/instructions/Manifest/SettleToken'
+import CancelLimitOrder from './components/instructions/Manifest/CancelLimitOrder'
+import WithdrawFees from './components/instructions/Token2022/WithdrawFees'
 
 const TITLE_LENGTH_LIMIT = 130
 // the true length limit is either at the tx size level, and maybe also the total account size level (I can't remember)
@@ -169,13 +173,12 @@ const defaultGovernanceCtx: InstructionsContext = {
   governance: null,
   setGovernance: () => null,
 }
-export const NewProposalContext = createContext<InstructionsContext>(
-  defaultGovernanceCtx
-)
+export const NewProposalContext =
+  createContext<InstructionsContext>(defaultGovernanceCtx)
 
 // Takes the first encountered governance account
 function extractGovernanceAccountFromInstructionsData(
-  instructionsData: ComponentInstructionData[]
+  instructionsData: ComponentInstructionData[],
 ): ProgramAccount<Governance> | null {
   return (
     instructionsData.find((itx) => itx.governedAccount)?.governedAccount ?? null
@@ -184,7 +187,7 @@ function extractGovernanceAccountFromInstructionsData(
 
 const getDefaultInstructionProps = (
   x: UiInstruction,
-  selectedGovernance: ProgramAccount<Governance> | null
+  selectedGovernance: ProgramAccount<Governance> | null,
 ) => ({
   holdUpTime: x.customHoldUpTime
     ? getTimestampFromDays(x.customHoldUpTime)
@@ -206,11 +209,8 @@ const New = () => {
     title: typeof router.query['t'] === 'string' ? router.query['t'] : '',
     description: '',
   })
-  const {
-    voteByCouncil,
-    shouldShowVoteByCouncilToggle,
-    setVoteByCouncil,
-  } = useVoteByCouncilToggle()
+  const { voteByCouncil, shouldShowVoteByCouncilToggle, setVoteByCouncil } =
+    useVoteByCouncilToggle()
   const [multiChoiceForm, setMultiChoiceForm] = useState<{
     governance: PublicKey | undefined
     options: string[]
@@ -220,10 +220,8 @@ const New = () => {
   })
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_formErrors, setFormErrors] = useState({})
-  const [
-    governance,
-    setGovernance,
-  ] = useState<ProgramAccount<Governance> | null>(null)
+  const [governance, setGovernance] =
+    useState<ProgramAccount<Governance> | null>(null)
   const [isLoadingSignedProposal, setIsLoadingSignedProposal] = useState(false)
   const [isLoadingDraft, setIsLoadingDraft] = useState(false)
   const [isMulti, setIsMulti] = useState<boolean>(false)
@@ -256,7 +254,7 @@ const New = () => {
       }
       handleSetInstructions(newInstruction, idx)
     },
-    [handleSetInstructions]
+    [handleSetInstructions],
   )
 
   const addInstruction = () => {
@@ -291,7 +289,7 @@ const New = () => {
 
     const { isValid, validationErrors }: formValidation = await isFormValid(
       schema,
-      form
+      form,
     )
 
     let instructions: UiInstruction[] = []
@@ -320,7 +318,7 @@ const New = () => {
           validationErrors: multiValidationErrors,
         }: formValidation = await isFormValid(
           multiChoiceSchema,
-          multiChoiceForm
+          multiChoiceForm,
         )
 
         if (isMultiFormValid && multiChoiceForm.governance) {
@@ -339,7 +337,7 @@ const New = () => {
             })
 
             const url = fmtUrlWithCluster(
-              `/dao/${symbol}/proposal/${proposalAddress}`
+              `/dao/${symbol}/proposal/${proposalAddress}`,
             )
 
             router.push(url)
@@ -356,19 +354,26 @@ const New = () => {
           handleTurnOffLoaders()
           throw Error('No governance selected')
         }
-
+        console.log(instructions)
         const additionalInstructions = instructions
-          .flatMap((instruction) =>
-            instruction.additionalSerializedInstructions
-              ?.filter(
-                (value, index, self) =>
-                  index === self.findIndex((t) => t === value)
-              )
+          .flatMap((instruction) => {
+            return instruction.additionalSerializedInstructions
+              ?.filter((x) => x)
               .map((x) => ({
-                data: x ? getInstructionDataFromBase64(x) : null,
+                data: x
+                  ? getInstructionDataFromBase64(
+                      typeof x === 'string' ? x : x.serializedInstruction,
+                    )
+                  : null,
                 ...getDefaultInstructionProps(instruction, governance),
+                holdUpTime:
+                  typeof x === 'string'
+                    ? instruction.customHoldUpTime
+                      ? getTimestampFromDays(instruction.customHoldUpTime)
+                      : governance?.account?.config.minInstructionHoldUpTime
+                    : getTimestampFromMinutes(x.holdUpTime),
               }))
-          )
+          })
           .filter((x) => x) as InstructionDataWithHoldUpTime[]
 
         const instructionsData = [
@@ -393,7 +398,7 @@ const New = () => {
           })
 
           const url = fmtUrlWithCluster(
-            `/dao/${symbol}/proposal/${proposalAddress}`
+            `/dao/${symbol}/proposal/${proposalAddress}`,
           )
 
           router.push(url)
@@ -408,7 +413,8 @@ const New = () => {
     handleTurnOffLoaders()
   }
 
-  const firstGovernancePk = instructionsData[0]?.governedAccount?.pubkey?.toBase58()
+  const firstGovernancePk =
+    instructionsData[0]?.governedAccount?.pubkey?.toBase58()
   const previousFirstGovernancePk = usePrevious(firstGovernancePk)
 
   useEffect(() => {
@@ -421,9 +427,8 @@ const New = () => {
   }, [firstGovernancePk, previousFirstGovernancePk, instructionsData])
 
   useEffect(() => {
-    const governedAccount = extractGovernanceAccountFromInstructionsData(
-      instructionsData
-    )
+    const governedAccount =
+      extractGovernanceAccountFromInstructionsData(instructionsData)
 
     setGovernance(governedAccount)
   }, [instructionsData])
@@ -436,7 +441,7 @@ const New = () => {
     ) {
       const instructionType = parseInt(router.query['i'], 10) as Instructions
       const instruction = availableInstructions.find(
-        (i) => i.id === instructionType
+        (i) => i.id === instructionType,
       )
 
       if (instruction) {
@@ -521,11 +526,16 @@ const New = () => {
       [Instructions.PythUpdatePoolAuthority]: PythUpdatePoolAuthority,
       [Instructions.CreateSolendObligationAccount]: CreateObligationAccount,
       [Instructions.InitSolendObligationAccount]: InitObligationAccount,
-      [Instructions.DepositReserveLiquidityAndObligationCollateral]: DepositReserveLiquidityAndObligationCollateral,
-      [Instructions.WithdrawObligationCollateralAndRedeemReserveLiquidity]: WithdrawObligationCollateralAndRedeemReserveLiquidity,
-      [Instructions.PsyFinanceMintAmericanOptions]: PsyFinanceMintAmericanOptions,
-      [Instructions.PsyFinanceBurnWriterForQuote]: PsyFinanceBurnWriterTokenForQuote,
-      [Instructions.PsyFinanceClaimUnderlyingPostExpiration]: PsyFinanceClaimUnderlyingPostExpiration,
+      [Instructions.DepositReserveLiquidityAndObligationCollateral]:
+        DepositReserveLiquidityAndObligationCollateral,
+      [Instructions.WithdrawObligationCollateralAndRedeemReserveLiquidity]:
+        WithdrawObligationCollateralAndRedeemReserveLiquidity,
+      [Instructions.PsyFinanceMintAmericanOptions]:
+        PsyFinanceMintAmericanOptions,
+      [Instructions.PsyFinanceBurnWriterForQuote]:
+        PsyFinanceBurnWriterTokenForQuote,
+      [Instructions.PsyFinanceClaimUnderlyingPostExpiration]:
+        PsyFinanceClaimUnderlyingPostExpiration,
       [Instructions.PsyFinanceExerciseOption]: PsyFinanceExerciseOption,
       [Instructions.SwitchboardFundOracle]: SwitchboardFundOracle,
       [Instructions.WithdrawFromOracle]: WithdrawFromOracle,
@@ -533,7 +543,8 @@ const New = () => {
       [Instructions.RefreshSolendReserve]: RefreshReserve,
       [Instructions.RealmConfig]: RealmConfig,
       [Instructions.CreateNftPluginRegistrar]: CreateNftPluginRegistrar,
-      [Instructions.CreateNftPluginMaxVoterWeight]: CreateNftPluginMaxVoterWeightRecord,
+      [Instructions.CreateNftPluginMaxVoterWeight]:
+        CreateNftPluginMaxVoterWeightRecord,
       [Instructions.ConfigureNftPluginCollection]: ConfigureNftPluginCollection,
       [Instructions.CloseTokenAccount]: CloseTokenAccount,
       [Instructions.CloseMultipleTokenAccounts]: CloseMultipleTokenAccounts,
@@ -551,10 +562,14 @@ const New = () => {
       [Instructions.WithdrawValidatorStake]: WithdrawValidatorStake,
       [Instructions.DelegateStake]: DelegateStake,
       [Instructions.RemoveStakeLock]: RemoveLockup,
+      [Instructions.PlaceLimitOrder]: PlaceLimitOrder,
+      [Instructions.SettleToken]: SettleToken,
+      [Instructions.CancelLimitOrder]: CancelLimitOrder,
       [Instructions.SplitStake]: SplitStake,
       [Instructions.DifferValidatorStake]: null,
       [Instructions.TransferDomainName]: TransferDomainName,
       [Instructions.SerumInitUser]: InitUser,
+      [Instructions.TokenWithdrawFees]: WithdrawFees,
       [Instructions.SerumGrantLockedSRM]: {
         componentBuilderFunction: ({ index, governance }) => (
           <GrantForm
@@ -609,7 +624,7 @@ const New = () => {
       [Instructions.SymmetryDeposit]: SymmetryDeposit,
       [Instructions.SymmetryWithdraw]: SymmetryWithdraw,
     }),
-    [governance?.pubkey?.toBase58()]
+    [governance?.pubkey?.toBase58()],
   )
 
   const getCurrentInstruction = useCallback(
@@ -644,7 +659,7 @@ const New = () => {
       )
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- TODO please fix, it can cause difficult bugs. You might wanna check out https://bobbyhadz.com/blog/react-hooks-exhaustive-deps for info. -@asktree
-    [governance?.pubkey?.toBase58()]
+    [governance?.pubkey?.toBase58()],
   )
 
   return (
@@ -677,7 +692,7 @@ const New = () => {
                     'text-xs mb-1',
                     form.title.length >= TITLE_LENGTH_LIMIT
                       ? 'text-error-red'
-                      : 'text-white/50'
+                      : 'text-white/50',
                   )}
                 >
                   {form.title.length} / {TITLE_LENGTH_LIMIT}
@@ -708,7 +723,7 @@ const New = () => {
                     'text-xs mb-1',
                     form.description.length >= DESCRIPTION_LENGTH_LIMIT
                       ? 'text-error-red'
-                      : 'text-white/50'
+                      : 'text-white/50',
                   )}
                 >
                   {form.description.length} / {DESCRIPTION_LENGTH_LIMIT}

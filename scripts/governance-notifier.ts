@@ -61,7 +61,7 @@ export async function runNotifier(summaryOnly = false) {
     connection,
     realmInfo!.programId,
     Governance,
-    [pubkeyFilter(1, realmInfo!.realmId)!]
+    [pubkeyFilter(1, realmInfo!.realmId)!],
   )
 
   const governancesMap = accountsToPubkeyMap(governances)
@@ -72,7 +72,7 @@ export async function runNotifier(summaryOnly = false) {
       return getGovernanceAccounts(connection, realmInfo!.programId, Proposal, [
         pubkeyFilter(1, new PublicKey(governancePk))!,
       ])
-    })
+    }),
   )
 
   console.log(`- scanning all '${REALM}' proposals`)
@@ -110,11 +110,11 @@ export async function runNotifier(summaryOnly = false) {
           const votingTokenDecimals = 6
           const yesVotes = fmtTokenAmount(
             proposal.account.getYesVoteCount(),
-            votingTokenDecimals
+            votingTokenDecimals,
           )
           const noVotes = fmtTokenAmount(
             proposal.account.getNoVoteCount(),
-            votingTokenDecimals
+            votingTokenDecimals,
           )
 
           const quorumReached = yesVotes >= MIN_VOTES_NEEDED
@@ -140,7 +140,7 @@ export async function runNotifier(summaryOnly = false) {
           })}
           
           🔗 https://realms.today/dao/${escape(
-            REALM
+            REALM,
           )}/proposal/${proposal.pubkey.toBase58()}`
 
           console.log(msg)
@@ -176,7 +176,7 @@ export async function runNotifier(summaryOnly = false) {
         const msg = `“${
           proposal.account.name
         }” proposal just opened for voting 🗳 https://realms.today/dao/${escape(
-          REALM
+          REALM,
         )}/proposal/${proposal.pubkey.toBase58()}`
 
         console.log(msg)
@@ -215,7 +215,7 @@ export async function runNotifier(summaryOnly = false) {
         const msg = `“${
           proposal.account.name
         }” proposal will close for voting 🗳 https://realms.today/dao/${escape(
-          REALM
+          REALM,
         )}/proposal/${proposal.pubkey.toBase58()} in 24 hrs`
 
         console.log(msg)

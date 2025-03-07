@@ -87,7 +87,7 @@ export function getCertifiedRealmInfos({ cluster }: ConnectionContext) {
 
 export function getCertifiedRealmInfo(
   realmId: string,
-  connection: ConnectionContext
+  connection: ConnectionContext,
 ) {
   if (!realmId) {
     return undefined
@@ -96,7 +96,7 @@ export function getCertifiedRealmInfo(
   const realmInfo = getCertifiedRealmInfos(connection).find(
     (r) =>
       equalsIgnoreCase(r.realmId.toBase58(), realmId) ||
-      equalsIgnoreCase(r.symbol, realmId)
+      equalsIgnoreCase(r.symbol, realmId),
   )
 
   return realmInfo
@@ -107,6 +107,7 @@ export function createUnchartedRealmInfo(realm: UnchartedRealm) {
     symbol: realm.name,
     programId: new PublicKey(realm.programId),
     realmId: new PublicKey(realm.address),
+    communityMint: new PublicKey(realm.communityMint),
     displayName: realm.name,
     isCertified: false,
     enableNotifi: true, // enable by default
@@ -117,4 +118,5 @@ type UnchartedRealm = {
   name: string
   programId: string
   address: string
+  communityMint: string
 }

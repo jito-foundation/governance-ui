@@ -21,7 +21,8 @@ import { Keypair, PublicKey, TransactionInstruction } from '@solana/web3.js'
 import { addQVPlugin } from './addPlugins/addQVPlugin'
 import { defaultSybilResistancePass } from '../GatewayPlugin/config'
 import { addGatewayPlugin } from './addPlugins/addGatewayPlugin'
-import {Coefficients} from "@solana/governance-program-library";
+import { Coefficients } from '@solana/governance-program-library'
+import { addTokenVoterPlugin } from './addPlugins/addTokenVoterPlugin'
 
 type CreateWithPlugin = {
   pluginList: PluginName[]
@@ -33,7 +34,7 @@ type CreateWithPlugin = {
 type TokenizedRealm = Web3Context & RealmCreation & CreateWithPlugin
 
 function determineVoterWeightAddin(
-  pluginList: PluginName[]
+  pluginList: PluginName[],
 ): PublicKey | undefined {
   if (pluginList.length === 0) return undefined
   // the last plugin in the chain is the one that is attached to the realm.
@@ -54,6 +55,10 @@ export default async function createTokenizedRealm({
     voterWeightAddin,
   }
 
+  if (pluginList.includes('token_voter') && !params.existingCommunityMintPk) {
+    throw new Error("It is mandatory to provide community mint public key.")
+  }
+
   const {
     communityMintPk,
     councilMintPk,
@@ -72,13 +77,14 @@ export default async function createTokenizedRealm({
     wallet,
     ...params,
     communityTokenConfig,
+    pluginList
   })
 
   try {
     const councilMembersChunks = chunks(councilMembersInstructions, 10)
     // only walletPk needs to sign the minting instructions and it's a signer by default and we don't have to include any more signers
     const councilMembersSignersChunks = Array(councilMembersChunks.length).fill(
-      []
+      [],
     )
     console.log('CREATE GOV TOKEN REALM: sending transactions')
 
@@ -90,7 +96,7 @@ export default async function createTokenizedRealm({
     if (pluginList.includes('gateway')) {
       // By default, use Civic's uniqueness pass. TODO allow this to be overridden in advanced mode.
       const passType = new PublicKey(
-        params.civicPass || defaultSybilResistancePass.value
+        params.civicPass || defaultSybilResistancePass.value,
       )
 
       const { pluginProgramId, instructions } = await addGatewayPlugin(
@@ -100,7 +106,7 @@ export default async function createTokenizedRealm({
         communityMintPk,
         programIdPk,
         predecessorProgramId,
-        passType
+        passType,
       )
 
       pluginIxes.push(...instructions)
@@ -120,11 +126,24 @@ export default async function createTokenizedRealm({
         programIdPk,
         predecessorProgramId,
         qvCoefficientsFromForm,
-        params.existingCommunityMintPk
+        params.existingCommunityMintPk,
       )
 
       pluginIxes.push(...instructions)
       predecessorProgramId = pluginProgramId
+    }
+
+    if (pluginList.includes('token_voter')) {
+      const {instructions} = await addTokenVoterPlugin(
+        connection,
+        wallet as Wallet,
+        realmPk,
+        communityMintPk,
+        programIdPk,
+        params.existingCommunityMintPk!
+      )
+
+      pluginIxes.push(...instructions)
     }
 
     if (pluginIxes.length > 0) {
@@ -137,7 +156,7 @@ export default async function createTokenizedRealm({
         realmPk,
         walletPk,
         mainGovernancePk,
-        SetRealmAuthorityAction.SetChecked
+        SetRealmAuthorityAction.SetChecked,
       )
     }
 
@@ -157,7 +176,7 @@ export default async function createTokenizedRealm({
       instructionsSet: txBatchesToInstructionSetWithSigners(
         ixBatch,
         signers,
-        batchIdx
+        batchIdx,
       ),
       sequenceType: SequenceType.Sequential,
     }))
