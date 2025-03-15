@@ -148,25 +148,6 @@ export const assembleWallets = async (
     const governanceAddress = account.governance?.pubkey?.toBase58()
 
     if (!walletMap[walletAddress]) {
-      // Fetch favorite domain when creating a new wallet
-      let favoriteDomain: {
-        name: string
-        address: PublicKey
-      } | null = null
-
-      try {
-        const favoriteDomainResponse = await getFavoriteDomain(
-          connection.current,
-          new PublicKey(walletAddress),
-        )
-        favoriteDomain = {
-          name: favoriteDomainResponse?.reverse,
-          address: new PublicKey(favoriteDomainResponse?.domain),
-        }
-      } catch (error) {
-        console.error('Error fetching favorite domain', error)
-      }
-
       walletMap[walletAddress] = {
         governanceAddress,
         address: walletAddress,
@@ -175,7 +156,6 @@ export const assembleWallets = async (
         rules: {},
         stats: {},
         totalValue: new BigNumber(0),
-        favoriteDomain,
       }
 
       if (governanceAddress) {
@@ -298,17 +278,38 @@ export const assembleWallets = async (
       })
     }
 
-    const defiPositionsValue = positions?.reduce((acc, position) => position.walletAddress === wallet.address ? acc.plus(position.value) : acc, new BigNumber(0)) ?? new BigNumber(0)
+    const defiPositionsValue =
+      positions?.reduce(
+        (acc, position) =>
+          position.walletAddress === wallet.address
+            ? acc.plus(position.value)
+            : acc,
+        new BigNumber(0),
+      ) ?? new BigNumber(0)
+
+    // Fetch favorite domain when creating a new wallet
+    const favoriteDomainResponse = await getFavoriteDomain(
+      connection.current,
+      new PublicKey(wallet.address),
+    ).catch(() => null)
+    
+    const favoriteDomain = favoriteDomainResponse
+      ? {
+          name: favoriteDomainResponse?.reverse,
+          address: new PublicKey(favoriteDomainResponse?.domain),
+        }
+      : null
 
     allWallets.push({
       ...wallet,
+      favoriteDomain,
       name: wallet.governanceAddress
         ? getAccountName(wallet.governanceAddress)
         : getAccountName(wallet.address),
       totalValue: calculateTotalValue(
         wallet.assets.map((asset) =>
-          'value' in asset ? asset.value : new BigNumber(0)
-        )
+          'value' in asset ? asset.value : new BigNumber(0),
+        ),
       ).plus(defiPositionsValue),
     })
   }
