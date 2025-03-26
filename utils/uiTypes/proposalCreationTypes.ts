@@ -302,6 +302,13 @@ export interface JoinDAOForm {
   amount?: number
 }
 
+export interface WithdrawDAOForm {
+  governedAccount?: AssetAccount
+  mintInfo: MintInfo | undefined
+  realm: string
+  amount?: number
+}
+
 export enum Instructions {
   Base64,
   Burn,
@@ -399,6 +406,7 @@ export enum Instructions {
   VotingMintConfig,
   WithdrawObligationCollateralAndRedeemReserveLiquidity,
   WithdrawValidatorStake,
+  WithdrawFromDAO,
   SplitStake,
   AddKeyToDID,
   RemoveKeyFromDID,

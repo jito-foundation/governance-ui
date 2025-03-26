@@ -96,6 +96,7 @@ import TransferDomainName from './components/instructions/TransferDomainName'
 import InitUser from './components/instructions/Serum/InitUser'
 import GrantForm from './components/instructions/Serum/GrantForm'
 import JoinDAO from './components/instructions/JoinDAO'
+import WithdrawDAO from './components/instructions/WithdrawFromDAO'
 import UpdateConfigAuthority from './components/instructions/Serum/UpdateConfigAuthority'
 import UpdateConfigParams from './components/instructions/Serum/UpdateConfigParams'
 import { StyledLabel, inputClasses } from '@components/inputs/styles'
@@ -527,7 +528,8 @@ const New = () => {
       [Instructions.SquadsMeshChangeThresholdMember]: MeshChangeThresholdMember,
       [Instructions.SquadsV4RemoveMember]: SquadsV4RemoveMember,
       [Instructions.SquadsV4AddMember]: SquadsV4AddMember,
-      [Instructions.SquadsV4ChangeThresholdMember]: SquadsV4ChangeThresholdMember,
+      [Instructions.SquadsV4ChangeThresholdMember]:
+        SquadsV4ChangeThresholdMember,
       [Instructions.PythRecoverAccount]: PythRecoverAccount,
       [Instructions.PythUpdatePoolAuthority]: PythUpdatePoolAuthority,
       [Instructions.CreateSolendObligationAccount]: CreateObligationAccount,
@@ -619,6 +621,7 @@ const New = () => {
       [Instructions.SerumUpdateGovConfigParams]: UpdateConfigParams,
       [Instructions.SerumUpdateGovConfigAuthority]: UpdateConfigAuthority,
       [Instructions.JoinDAO]: JoinDAO,
+      [Instructions.WithdrawFromDAO]: WithdrawDAO,
       [Instructions.AddKeyToDID]: AddKeyToDID,
       [Instructions.RemoveKeyFromDID]: RemoveKeyFromDID,
       [Instructions.AddServiceToDID]: AddServiceToDID,

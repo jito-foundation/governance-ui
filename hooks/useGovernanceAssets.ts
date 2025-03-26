@@ -297,6 +297,11 @@ export default function useGovernanceAssets() {
       name: 'Join a DAO',
       packageId: PackageEnum.Common,
     },
+    [Instructions.WithdrawFromDAO]: {
+      name: 'Withdraw from DAO',
+      packageId: PackageEnum.Common,
+      isVisible: true,
+    },
     [Instructions.Mint]: {
       name: 'Mint Tokens',
       isVisible: canUseMintInstruction,
