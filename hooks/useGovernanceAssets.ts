@@ -300,7 +300,6 @@ export default function useGovernanceAssets() {
     [Instructions.WithdrawFromDAO]: {
       name: 'Withdraw from DAO',
       packageId: PackageEnum.Common,
-      isVisible: true,
     },
     [Instructions.Mint]: {
       name: 'Mint Tokens',
