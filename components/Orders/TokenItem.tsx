@@ -2,18 +2,22 @@ import { toUiDecimals } from '@blockworks-foundation/mango-v4'
 import ImgWithLoader from '@components/ImgWithLoader'
 import TokenIcon from '@components/treasuryV2/icons/TokenIcon'
 import { abbreviateAddress } from '@utils/formatting'
-import { getTokenLabels } from '@utils/orders'
+import { getTokenLabels, getTokenLabelsFromInfo } from '@utils/orders'
 import tokenPriceService from '@utils/services/tokenPrice'
+import { TokenInfo } from '@utils/services/types'
 import { AssetAccount } from '@utils/uiTypes/assets'
 
 export default function TokenItem({
   assetAccount,
   selectTokenAccount,
 }: {
-  assetAccount: AssetAccount
-  selectTokenAccount: (assetAccount: AssetAccount) => void
+  assetAccount: AssetAccount | TokenInfo
+  selectTokenAccount: (assetAccount: AssetAccount | TokenInfo) => void
 }) {
-  const { symbol, img, uiAmount } = getTokenLabels(assetAccount)
+  const isTokenInfo = isTokenInfoAccount(assetAccount)
+  const { symbol, img, uiAmount } = !isTokenInfo
+    ? getTokenLabels(assetAccount)
+    : getTokenLabelsFromInfo(assetAccount)
 
   return (
     <div
@@ -26,7 +30,15 @@ export default function TokenItem({
         <ImgWithLoader className="w-6 h-6 mr-3" src={img}></ImgWithLoader>
       )}
       <div>{symbol}</div>
-      <div className="!ml-auto">{uiAmount.toFixed(4)}</div>
+      {uiAmount !== null ? (
+        <div className="!ml-auto">{uiAmount.toFixed(4)}</div>
+      ) : null}
     </div>
   )
+}
+
+function isTokenInfoAccount(
+  account: AssetAccount | TokenInfo,
+): account is TokenInfo {
+  return (account as TokenInfo).symbol !== undefined
 }

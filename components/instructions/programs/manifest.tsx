@@ -108,6 +108,7 @@ export const MANIFEST_INSTRUCTIONS = {
         const baseTokenInfo = tokenPriceService.getTokenInfo(
           accounts[10].pubkey.toBase58(),
         )
+
         const market = accounts[3].pubkey
 
         const marketData = await Market.loadFromAddress({
@@ -116,6 +117,7 @@ export const MANIFEST_INSTRUCTIONS = {
         })
         const mint = baseTokenInfo
         const currency = quoteTokenInfo
+
         const uiAmount = toUiDecimals(amount, mint!.decimals)
         const price =
           params.priceMantissa *

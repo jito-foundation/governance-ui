@@ -3,6 +3,7 @@ import { abbreviateAddress } from './formatting'
 import tokenPriceService from './services/tokenPrice'
 import { AssetAccount } from './uiTypes/assets'
 import { PublicKey } from '@solana/web3.js'
+import { TokenInfo } from './services/types'
 
 export type SideMode = 'Sell' | 'Buy'
 
@@ -33,6 +34,15 @@ export const getTokenLabels = (assetAccount: AssetAccount | null) => {
     : assetAccount?.isSol
     ? toUiDecimals(assetAccount.extensions.amount!, 9)
     : 0
+
+  return { img, uiAmount, symbol }
+}
+
+export const getTokenLabelsFromInfo = (assetAccount: TokenInfo | null) => {
+  const symbol = assetAccount?.symbol
+
+  const img = assetAccount?.logoURI
+  const uiAmount = null
 
   return { img, uiAmount, symbol }
 }

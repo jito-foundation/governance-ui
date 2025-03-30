@@ -7,16 +7,20 @@ export default function TokenBox({
   symbol,
   uiAmount,
   onClick,
+  disabled,
 }: {
   img?: string
   symbol?: string
   uiAmount?: number
   onClick?: () => void
+  disabled: boolean
 }) {
   return (
     <div
       onClick={onClick}
-      className="flex items-center border border-fgd-3 p-3 my-3 cursor-pointer hover:border-primary-light focus:border-primary-light bg-bkg-1 rounded-md"
+      className={`flex items-center border border-fgd-3 p-3 my-3 cursor-pointer hover:border-primary-light focus:border-primary-light bg-bkg-1 rounded-md ${
+        disabled ? 'opacity-70 pointer-events-none' : ''
+      }`}
     >
       <>
         <div className="mr-3">

@@ -33,7 +33,7 @@ import {
 } from '@solana/web3.js'
 import { Market, UiWrapper } from '@cks-systems/manifest-sdk'
 import useLegacyConnectionContext from '@hooks/useLegacyConnectionContext'
-import { WRAPPED_SOL_MINT } from '@metaplex-foundation/js'
+import { isBid, WRAPPED_SOL_MINT } from '@metaplex-foundation/js'
 import {
   createAssociatedTokenAccountIdempotentInstruction,
   createCloseAccountInstruction,
@@ -67,6 +67,12 @@ import {
   createCancelOrderInstruction,
   createSettleFundsInstruction,
 } from '@cks-systems/manifest-sdk/dist/cjs/ui_wrapper/instructions'
+import VoteBySwitch from '../../proposal/components/VoteBySwitch'
+import { ArrowsUpDownIcon } from '@heroicons/react-v2/20/solid'
+import { getJupiterPricesByMintStrings } from '@hooks/queries/jupiterPrice'
+import { WSOL_MINT_PK } from '@components/instructions/tools'
+import { Description } from '@radix-ui/react-dialog'
+import DescriptionBox from '@components/Orders/DescriptionBox'
 
 export default function Orders() {
   const { fmtUrlWithCluster } = useQueryContext()
@@ -74,9 +80,18 @@ export default function Orders() {
   const { handleCreateProposal } = useCreateProposal()
   const [selectedSolWallet, setSelectedSolWallet] =
     useState<AssetAccount | null>(null)
-  const [cancelId, setCancelId] = useState<number | null>(null)
+  const [cancelId] = useState<number | null>(null)
   const connection = useLegacyConnectionContext()
   const router = useRouter()
+  const { voteByCouncil, shouldShowVoteByCouncilToggle, setVoteByCouncil } =
+    useVoteByCouncilToggle()
+
+  const [showCustomTitleModal, setShowCustomTitleModal] = useState(false)
+  const [initialTitle, setInitialTitle] = useState('')
+
+  const [currentTitleCallback, setCurrentTitleCallback] = useState<
+    ((title: string, description: string) => void) | null
+  >(null)
 
   const wallet = useWalletOnePointOh()
   const connected = !!wallet?.connected
@@ -84,15 +99,15 @@ export default function Orders() {
   const tokens = tokenPriceService._tokenList
   const usdcToken =
     tokens.find((x) => x.address === USDC_MINT.toBase58()) || null
+  const wsolToken =
+    tokens.find((x) => x.address === WSOL_MINT_PK.toBase58()) || null
 
-  const { openOrders, refetchOpenOrders, loadingOpenOrders } = useOpenOrders(
+  const { openOrders, loadingOpenOrders } = useOpenOrders(
     selectedSolWallet?.extensions.transferAddress,
   )
-  const {
-    unsettledBalances,
-    refetchUnsettledBalances,
-    loadingUnsettledBalances,
-  } = useUnsettledBalances(selectedSolWallet?.extensions.transferAddress)
+  const { unsettledBalances, loadingUnsettledBalances } = useUnsettledBalances(
+    selectedSolWallet?.extensions.transferAddress,
+  )
 
   const [sellToken, setSellToken] = useState<null | AssetAccount>(null)
   const [sellAmount, setSellAmount] = useState('0')
@@ -122,8 +137,23 @@ export default function Orders() {
   }, [sellToken?.extensions.mint])
 
   useEffect(() => {
+    const getPrice = async (buyToken: TokenInfo) => {
+      const resp = await getJupiterPricesByMintStrings([buyToken.address])
+
+      setPrice(resp[buyToken.address].price.toString())
+    }
+    if (buyToken?.address) {
+      getPrice(buyToken)
+    }
+  }, [buyToken])
+
+  useEffect(() => {
     if (tryGetNumber(sellAmount) && tryGetNumber(price)) {
-      setBuyAmount((Number(sellAmount) * Number(price)).toString())
+      if (sideMode === 'Sell') {
+        setBuyAmount((Number(sellAmount) * Number(price)).toString())
+      } else if (sideMode === 'Buy') {
+        setBuyAmount((Number(sellAmount) / Number(price)).toString())
+      }
     }
   }, [sellAmount, price])
 
@@ -293,7 +323,11 @@ export default function Orders() {
     sortConfig,
   } = useSortableData(formattedOrders || [])
 
-  const settle = async (unsettledMarket: string) => {
+  const settle = async (
+    title: string,
+    description: string,
+    unsettledMarket: string,
+  ) => {
     const ixes: (
       | string
       | {
@@ -306,17 +340,21 @@ export default function Orders() {
     if (selectedSolWallet && wallet?.publicKey) {
       const owner = selectedSolWallet.extensions.transferAddress!
 
-      const wrapper = await UiWrapper.fetchFirstUserWrapper(
-        connection.current,
-        owner,
-      )
-      const market = await Market.loadFromAddress({
-        connection: connection.current,
-        address: new PublicKey(unsettledMarket),
-      })
+      const [wrapper, market] = await Promise.all([
+        UiWrapper.fetchFirstUserWrapper(connection.current, owner),
+        Market.loadFromAddress({
+          connection: connection.current,
+          address: new PublicKey(unsettledMarket),
+        }),
+      ])
       const quoteMint = market.quoteMint()
       const baseMint = market.baseMint()
       const wrapperPk = wrapper!.pubkey
+
+      const [quoteMintInfo, baseMintInfo] = await Promise.all([
+        connection.current.getAccountInfo(quoteMint),
+        connection.current.getAccountInfo(baseMint),
+      ])
 
       const needToCreateWSolAcc =
         baseMint.equals(WRAPPED_SOL_MINT) || quoteMint.equals(WRAPPED_SOL_MINT)
@@ -325,19 +363,19 @@ export default function Orders() {
         baseMint,
         owner,
         true,
-        TOKEN_PROGRAM_ID,
+        baseMintInfo?.owner,
       )
       const traderTokenAccountQuote = getAssociatedTokenAddressSync(
         quoteMint,
         owner,
         true,
-        TOKEN_PROGRAM_ID,
+        quoteMintInfo?.owner,
       )
       const platformAta = getAssociatedTokenAddressSync(
         quoteMint,
         FEE_WALLET,
         true,
-        TOKEN_PROGRAM_ID,
+        quoteMintInfo?.owner,
       )
 
       const [platformAtaAccount, baseAtaAccount, quoteAtaAccount] =
@@ -361,7 +399,7 @@ export default function Orders() {
             platformAta,
             FEE_WALLET,
             quoteMint,
-            TOKEN_PROGRAM_ID,
+            quoteMintInfo?.owner,
           )
         prerequisiteInstructions.push(platformAtaCreateIx)
       }
@@ -372,7 +410,7 @@ export default function Orders() {
             traderTokenAccountQuote,
             owner,
             quoteMint,
-            TOKEN_PROGRAM_ID,
+            quoteMintInfo?.owner,
           )
         prerequisiteInstructions.push(quoteAtaCreateIx)
       }
@@ -383,7 +421,7 @@ export default function Orders() {
             traderTokenAccountBase,
             owner,
             baseMint,
-            TOKEN_PROGRAM_ID,
+            baseMintInfo?.owner,
           )
         prerequisiteInstructions.push(baseAtaCreateIx)
       }
@@ -401,8 +439,8 @@ export default function Orders() {
             vaultQuote: getVaultAddress(market.address, quoteMint),
             mintBase: baseMint,
             mintQuote: quoteMint,
-            tokenProgramBase: TOKEN_PROGRAM_ID,
-            tokenProgramQuote: TOKEN_PROGRAM_ID,
+            tokenProgramBase: baseMintInfo!.owner,
+            tokenProgramQuote: quoteMintInfo!.owner,
             platformTokenAccount: platformAta,
           },
           {
@@ -468,11 +506,11 @@ export default function Orders() {
     }
     try {
       const proposalAddress = await handleCreateProposal({
-        title: 'Settle limit orders',
-        description: '',
+        title: title,
+        description: description,
         governance: selectedSolWallet!.governance,
         instructionsData: proposalInstructions,
-        voteByCouncil: true,
+        voteByCouncil: voteByCouncil,
         isDraft: false,
       })
       const url = fmtUrlWithCluster(
@@ -485,7 +523,11 @@ export default function Orders() {
     }
   }
 
-  const cancelOrder = async (openOrderId: number) => {
+  const cancelOrder = async (
+    title: string,
+    description: string,
+    openOrderId: number,
+  ) => {
     const ixes: (
       | string
       | {
@@ -507,17 +549,22 @@ export default function Orders() {
 
       const owner = selectedSolWallet.extensions.transferAddress!
 
-      const wrapper = await UiWrapper.fetchFirstUserWrapper(
-        connection.current,
-        owner,
-      )
-      const market = await Market.loadFromAddress({
-        connection: connection.current,
-        address: new PublicKey(order!.market),
-      })
+      const [wrapper, market] = await Promise.all([
+        UiWrapper.fetchFirstUserWrapper(connection.current, owner),
+        Market.loadFromAddress({
+          connection: connection.current,
+          address: new PublicKey(order!.market),
+        }),
+      ])
+
       const quoteMint = market.quoteMint()
       const baseMint = market.baseMint()
       const wrapperPk = wrapper!.pubkey
+
+      const [quoteMintInfo, baseMintInfo] = await Promise.all([
+        connection.current.getAccountInfo(quoteMint),
+        connection.current.getAccountInfo(baseMint),
+      ])
 
       const needToCreateWSolAcc =
         baseMint.equals(WRAPPED_SOL_MINT) || quoteMint.equals(WRAPPED_SOL_MINT)
@@ -526,19 +573,19 @@ export default function Orders() {
         baseMint,
         owner,
         true,
-        TOKEN_PROGRAM_ID,
+        baseMintInfo?.owner,
       )
       const traderTokenAccountQuote = getAssociatedTokenAddressSync(
         quoteMint,
         owner,
         true,
-        TOKEN_PROGRAM_ID,
+        quoteMintInfo?.owner,
       )
       const platformAta = getAssociatedTokenAddressSync(
         quoteMint,
         FEE_WALLET,
         true,
-        TOKEN_PROGRAM_ID,
+        quoteMintInfo?.owner,
       )
 
       const [platformAtaAccount, baseAtaAccount, quoteAtaAccount] =
@@ -562,7 +609,7 @@ export default function Orders() {
             platformAta,
             FEE_WALLET,
             quoteMint,
-            TOKEN_PROGRAM_ID,
+            quoteMintInfo?.owner,
           )
         prerequisiteInstructions.push(platformAtaCreateIx)
       }
@@ -573,7 +620,7 @@ export default function Orders() {
             traderTokenAccountQuote,
             owner,
             quoteMint,
-            TOKEN_PROGRAM_ID,
+            quoteMintInfo?.owner,
           )
         prerequisiteInstructions.push(quoteAtaCreateIx)
       }
@@ -584,12 +631,15 @@ export default function Orders() {
             traderTokenAccountBase,
             owner,
             baseMint,
-            TOKEN_PROGRAM_ID,
+            baseMintInfo?.owner,
           )
         prerequisiteInstructions.push(baseAtaCreateIx)
       }
 
       const mint = isBid ? quoteMint : baseMint
+      const mintTokenProgram = isBid
+        ? quoteMintInfo?.owner
+        : baseMintInfo?.owner
       const cancelOrderIx: TransactionInstruction =
         createCancelOrderInstruction(
           {
@@ -604,7 +654,7 @@ export default function Orders() {
             vault: getVaultAddress(market.address, mint),
             mint: mint,
             systemProgram: SYSTEM_PROGRAM_ID,
-            tokenProgram: TOKEN_PROGRAM_ID,
+            tokenProgram: mintTokenProgram,
             manifestProgram: MANIFEST_PROGRAM_ID,
           },
           {
@@ -641,8 +691,8 @@ export default function Orders() {
             vaultQuote: getVaultAddress(market.address, quoteMint),
             mintBase: baseMint,
             mintQuote: quoteMint,
-            tokenProgramBase: TOKEN_PROGRAM_ID,
-            tokenProgramQuote: TOKEN_PROGRAM_ID,
+            tokenProgramBase: baseMintInfo!.owner,
+            tokenProgramQuote: quoteMintInfo!.owner,
             platformTokenAccount: platformAta,
           },
           {
@@ -708,11 +758,11 @@ export default function Orders() {
     }
     try {
       const proposalAddress = await handleCreateProposal({
-        title: 'Cancel limit order',
-        description: '',
+        title: title,
+        description: description,
         governance: selectedSolWallet!.governance,
         instructionsData: proposalInstructions,
-        voteByCouncil: true,
+        voteByCouncil: voteByCouncil,
         isDraft: false,
       })
       const url = fmtUrlWithCluster(
@@ -729,7 +779,7 @@ export default function Orders() {
     unselttedFormattedTableData(),
   )
 
-  const proposeSwap = async () => {
+  const proposeSwap = async (title: string, description: string) => {
     const ixes: (
       | string
       | {
@@ -739,38 +789,48 @@ export default function Orders() {
     )[] = []
     const signers: Keypair[] = []
     const prerequisiteInstructions: TransactionInstruction[] = []
+    const isBid = sideMode === 'Buy'
     if (selectedSolWallet && sellToken && wallet?.publicKey) {
       const orderId = Date.now()
-      const isBid = sideMode === 'Buy'
 
       const owner = sellToken.isSol
         ? sellToken.extensions.transferAddress!
         : sellToken.extensions.token!.account.owner
 
-      const wrapper = await UiWrapper.fetchFirstUserWrapper(
-        connection.current,
-        owner,
-      )
+      const baseTokenMint = !isBid
+        ? sellToken.extensions.mint!.publicKey!
+        : new PublicKey(buyToken!.address)
 
-      const markets = await Market.findByMints(
-        connection.current,
-        sellToken.extensions.mint!.publicKey!,
-        new PublicKey(buyToken!.address),
-      )
+      const quoteTokenMint = !isBid
+        ? new PublicKey(buyToken!.address)
+        : sellToken.extensions.mint!.publicKey!
+
+      const [wrapper, markets] = await Promise.all([
+        UiWrapper.fetchFirstUserWrapper(connection.current, owner),
+        Market.findByMints(connection.current, baseTokenMint, quoteTokenMint),
+      ])
+
       let market = markets.length ? markets[0] : null
+
       if (!market) {
         const marketIxs = await Market.setupIxs(
           connection.current,
-          sellToken.extensions.mint!.publicKey!,
-          new PublicKey(buyToken!.address),
+          baseTokenMint,
+          quoteTokenMint,
           wallet.publicKey,
         )
         market = {
           address: marketIxs.signers[0].publicKey,
-          baseMint: () => baseMint,
-          quoteMint: () => quoteMint,
-          baseDecimals: () => sellToken.extensions.mint?.account.decimals,
-          quoteDecimals: () => buyToken?.decimals,
+          baseMint: () => baseTokenMint,
+          quoteMint: () => quoteTokenMint,
+          baseDecimals: () =>
+            !isBid
+              ? sellToken.extensions.mint?.account.decimals
+              : buyToken?.decimals,
+          quoteDecimals: () =>
+            !isBid
+              ? buyToken?.decimals
+              : sellToken.extensions.mint?.account.decimals,
         } as Market
 
         prerequisiteInstructions.push(...marketIxs.ixs)
@@ -781,6 +841,11 @@ export default function Orders() {
       const quoteMint = market!.quoteMint()
       const baseMint = market!.baseMint()
       let wrapperPk = wrapper?.pubkey
+
+      const [quoteMintInfo, baseMintInfo] = await Promise.all([
+        connection.current.getAccountInfo(quoteMint),
+        connection.current.getAccountInfo(baseMint),
+      ])
 
       const needToCreateWSolAcc =
         baseMint.equals(WRAPPED_SOL_MINT) || quoteMint.equals(WRAPPED_SOL_MINT)
@@ -801,7 +866,10 @@ export default function Orders() {
         const solTransferIx = SystemProgram.transfer({
           fromPubkey: owner,
           toPubkey: wsolAta,
-          lamports: toNative(Number(sellAmount), 9).toNumber(),
+          lamports: toNative(
+            Number(!isBid ? sellAmount : buyAmount),
+            9,
+          ).toNumber(),
         })
 
         const syncNative = createSyncNativeInstruction(wsolAta)
@@ -825,18 +893,19 @@ export default function Orders() {
           ...setup.signers.map((x) => Keypair.fromSecretKey(x.secretKey)),
         )
       }
+
       const placeIx = await UiWrapper['placeIx_'](
         market,
         {
           wrapper: wrapperPk!,
           owner,
           payer: owner,
-          baseTokenProgram: TOKEN_PROGRAM_ID,
-          quoteTokenProgram: TOKEN_PROGRAM_ID,
+          baseTokenProgram: baseMintInfo?.owner,
+          quoteTokenProgram: quoteMintInfo?.owner,
         },
         {
           isBid: isBid,
-          amount: Number(sellAmount),
+          amount: Number(!isBid ? sellAmount : buyAmount),
           price: Number(price),
           orderId: orderId,
         },
@@ -847,19 +916,19 @@ export default function Orders() {
         baseMint,
         owner,
         true,
-        TOKEN_PROGRAM_ID,
+        baseMintInfo?.owner,
       )
       const traderTokenAccountQuote = getAssociatedTokenAddressSync(
         quoteMint,
         owner,
         true,
-        TOKEN_PROGRAM_ID,
+        quoteMintInfo?.owner,
       )
       const platformAta = getAssociatedTokenAddressSync(
         quoteMint,
         FEE_WALLET,
         true,
-        TOKEN_PROGRAM_ID,
+        quoteMintInfo?.owner,
       )
 
       const [platformAtaAccount, baseAtaAccount, quoteAtaAccount] =
@@ -883,7 +952,7 @@ export default function Orders() {
             platformAta,
             FEE_WALLET,
             quoteMint,
-            TOKEN_PROGRAM_ID,
+            quoteMintInfo?.owner,
           )
         prerequisiteInstructions.push(platformAtaCreateIx)
       }
@@ -894,7 +963,7 @@ export default function Orders() {
             traderTokenAccountQuote,
             owner,
             quoteMint,
-            TOKEN_PROGRAM_ID,
+            quoteMintInfo?.owner,
           )
         prerequisiteInstructions.push(quoteAtaCreateIx)
       }
@@ -905,7 +974,7 @@ export default function Orders() {
             traderTokenAccountBase,
             owner,
             baseMint,
-            TOKEN_PROGRAM_ID,
+            baseMintInfo?.owner,
           )
         prerequisiteInstructions.push(baseAtaCreateIx)
       }
@@ -935,13 +1004,18 @@ export default function Orders() {
         })
       }
     }
+
+    const sellTokenName = tokenPriceService._tokenList.find(
+      (x) => x.address === sellToken?.extensions.mint?.publicKey.toBase58(),
+    )?.name
+
     try {
       const proposalAddress = await handleCreateProposal({
-        title: `Sell ${symbol} for USDC`,
-        description: '',
+        title: title,
+        description: description,
         governance: selectedSolWallet!.governance,
         instructionsData: proposalInstructions,
-        voteByCouncil: true,
+        voteByCouncil: voteByCouncil,
         isDraft: false,
       })
       const url = fmtUrlWithCluster(
@@ -953,7 +1027,36 @@ export default function Orders() {
       notify({ type: 'error', message: `${ex}` })
     }
   }
-  const handleSwitchSides = () => null
+  const handleSwitchSides = (side: 'Buy' | 'Sell') => {
+    setSellAmount('0')
+    setBuyAmount('0')
+    if (side === 'Buy') {
+      const usdcToSelect = governedTokenAccounts
+        .filter(
+          (x) =>
+            wallet &&
+            x.extensions.token?.account.owner.equals(
+              selectedSolWallet!.extensions.transferAddress!,
+            ),
+        )
+        .find((x) => x.extensions.mint?.publicKey.equals(USDC_MINT))
+      if (usdcToSelect) {
+        setSideMode('Buy')
+        setSellToken(usdcToSelect)
+        setBuyToken(wsolToken)
+      } else {
+        notify({
+          type: 'warn',
+          message:
+            'No USDC detected in selected wallet buy USDC or change selected wallet',
+        })
+      }
+    } else {
+      setSideMode('Sell')
+      setSellToken(null)
+      setBuyToken(usdcToken)
+    }
+  }
   const openTokenSearchBox = (mode: SideMode) => {
     setSideMode(mode)
     setIsTokenSearchOpen(true)
@@ -968,15 +1071,25 @@ export default function Orders() {
       <header className="space-y-6 border-b border-white/10 pb-4">
         <PreviousRouteBtn />
       </header>
-      <div className="gap-x-4 mb-6">
-        <GovernedAccountSelect
-          label={'Wallet'}
-          governedAccounts={governedTokenAccounts.filter((x) => x.isSol)}
-          onChange={(value: AssetAccount) => setSelectedSolWallet(value)}
-          value={selectedSolWallet}
-          governance={selectedSolWallet?.governance}
-          type="wallet"
-        />
+      <div className="gap-x-4 mb-6 flex items-center">
+        <div className="w-[500px] mr-6">
+          <GovernedAccountSelect
+            label={'Wallet'}
+            governedAccounts={governedTokenAccounts.filter((x) => x.isSol)}
+            onChange={(value: AssetAccount) => setSelectedSolWallet(value)}
+            value={selectedSolWallet}
+            governance={selectedSolWallet?.governance}
+            type="wallet"
+          />
+        </div>
+        {shouldShowVoteByCouncilToggle && (
+          <VoteBySwitch
+            checked={voteByCouncil}
+            onChange={() => {
+              setVoteByCouncil(!voteByCouncil)
+            }}
+          ></VoteBySwitch>
+        )}
       </div>
       <div className="flex flex-col items-center justify-center">
         {isTokenSearchOpen && (
@@ -987,13 +1100,30 @@ export default function Orders() {
           >
             <div>Select token</div>
             <TokenSearchBox
-              selectTokenAccount={(assetAccount) => {
+              selectSellToken={(assetAccount) => {
                 setSellToken(assetAccount)
+                setIsTokenSearchOpen(false)
+              }}
+              selectBuyToken={(assetAccount) => {
+                setBuyToken(assetAccount)
                 setIsTokenSearchOpen(false)
               }}
               wallet={selectedSolWallet?.extensions.transferAddress}
               mode={sideMode}
             ></TokenSearchBox>
+          </Modal>
+        )}
+        {showCustomTitleModal && (
+          <Modal
+            sizeClassName="sm:max-w-3xl"
+            onClose={() => setShowCustomTitleModal(false)}
+            isOpen={showCustomTitleModal}
+          >
+            <div>Title and description</div>
+            <DescriptionBox
+              initTitle={initialTitle}
+              callback={currentTitleCallback!}
+            ></DescriptionBox>
           </Modal>
         )}
         <div className="w-full max-w-lg">
@@ -1002,6 +1132,7 @@ export default function Orders() {
               <div className="px-4">
                 <div className="text-xs">Sell</div>
                 <TokenBox
+                  disabled={sideMode === 'Buy'}
                   onClick={() => openTokenSearchBox('Sell')}
                   img={img}
                   symbol={symbol}
@@ -1053,17 +1184,21 @@ export default function Orders() {
                 />
                 <div className="flex items-center py-4">
                   <div className="h-px w-full bg-bkg-4" />
-                  {/* <Button
+                  <Button
                     className="flex shrink-0 items-center justify-center rounded-full border border-bkg-4 bg-bkg-2"
-                    onClick={() => handleSwitchSides()}
+                    onClick={() =>
+                      handleSwitchSides(sideMode === 'Sell' ? 'Buy' : 'Sell')
+                    }
                   >
-                 <ArrowsUpDownIcon className="w-4 h-4 text-button-text" />
-                  </Button> */}
+                    <ArrowsUpDownIcon className="w-4 h-4 text-button-text" />
+                  </Button>
                   <div className="h-px w-full bg-bkg-4" />
                 </div>
                 <div className="text-xs mb-3">Buy</div>
                 <div>
                   <TokenBox
+                    disabled={sideMode === 'Sell'}
+                    onClick={() => openTokenSearchBox('Buy')}
                     img={buyToken?.logoURI}
                     symbol={buyToken?.symbol}
                   ></TokenBox>
@@ -1072,17 +1207,37 @@ export default function Orders() {
                 <div>
                   <Input
                     className="w-full min-w-full mb-3 border-bkg-4"
-                    disabled={true}
                     type="number"
                     value={buyAmount}
-                    onChange={(e) => setBuyAmount(e.target.value)}
                     placeholder="Buy amount"
                   />
                 </div>
                 {connected ? (
                   <Button
                     className={`mt-4 flex h-12 w-full items-center justify-center rounded-full bg-button font-bold text-button-text focus:outline-none disabled:cursor-not-allowed disabled:opacity-40 md:hover:bg-button-hover`}
-                    onClick={proposeSwap}
+                    onClick={() => {
+                      const sellTokenName =
+                        tokenPriceService._tokenList.find(
+                          (x) =>
+                            x.address ===
+                            sellToken?.extensions.mint?.publicKey.toBase58(),
+                        )?.name ||
+                        abbreviateAddress(
+                          sellToken!.extensions.mint!.publicKey!,
+                        )
+                      const isBid = sideMode === 'Buy'
+
+                      setShowCustomTitleModal(true)
+                      setInitialTitle(
+                        `${sideMode} ${
+                          !isBid ? sellTokenName : buyToken?.name
+                        } for ${isBid ? sellTokenName : buyToken?.name}`,
+                      )
+                      setCurrentTitleCallback(
+                        () => (title: string, description: string) =>
+                          proposeSwap(title, description),
+                      )
+                    }}
                   >
                     {loading ? <Loading /> : <span>Place limit order</span>}
                   </Button>
@@ -1100,11 +1255,16 @@ export default function Orders() {
         </div>
       </div>
       <div>
+        <div className="mt-6 mb-2 flex items-center">
+          <span className="flex items-center">
+            Settle your filled orders to transfer the funds to DAO wallet{' '}
+            <span className="text-xs text-th-fgd-3 animate-pulse ml-3">
+              <div className="ml-1 h-2 w-2 rounded-full bg-green-600 animate-ping [animation-duration:5s]"></div>
+            </span>
+          </span>
+        </div>
         {tableUnsettledOrders?.length ? (
           <div>
-            <div className="mt-6 mb-2">
-              Settle your filled orders to transfer the funds to DAO wallet
-            </div>
             <div className="space-y-3 border border-bkg-4 p-6 mb-6">
               {tableUnsettledOrders.map((data, index) => {
                 const {
@@ -1162,7 +1322,14 @@ export default function Orders() {
                       <div className="flex justify-end">
                         <Button
                           className="bg-th-up !text-th-button-text md:hover:bg-th-up-dark"
-                          onClick={() => settle(marketAddress)}
+                          onClick={() => {
+                            setShowCustomTitleModal(true)
+                            setInitialTitle('Settle limit order')
+                            setCurrentTitleCallback(
+                              () => (title: string, description: string) =>
+                                settle(title, description, marketAddress),
+                            )
+                          }}
                         >
                           <CheckIcon className="w-4" />
                         </Button>
@@ -1181,7 +1348,12 @@ export default function Orders() {
           </div>
         )}
       </div>
-      <div className="mb-2">Open Orders</div>
+      <div className="mb-2 flex items-center">
+        Open Orders{' '}
+        <span className="text-xs text-th-fgd-3 animate-pulse ml-3">
+          <div className="ml-1 h-2 w-2 rounded-full bg-green-600 animate-ping [animation-duration:5s]"></div>
+        </span>
+      </div>
       <div>
         {openOrders && openOrders?.length ? (
           <div className="border border-bkg-4 p-6 my-6 mt-0">
@@ -1310,7 +1482,14 @@ export default function Orders() {
                       <Button
                         className="bg-th-down !text-th-button-text md:hover:bg-th-down-dark"
                         disabled={cancelId === orderId}
-                        onClick={() => cancelOrder(orderId)}
+                        onClick={() => {
+                          setShowCustomTitleModal(true)
+                          setInitialTitle('Cancel limit order')
+                          setCurrentTitleCallback(
+                            () => (title: string, description: string) =>
+                              cancelOrder(title, description, orderId),
+                          )
+                        }}
                       >
                         {cancelId === Number(orderId) ? (
                           <Loading className="w-4" />
