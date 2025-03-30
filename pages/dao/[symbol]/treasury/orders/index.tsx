@@ -787,12 +787,11 @@ export default function Orders() {
           holdUpTime: number
         }
     )[] = []
-    const signers: Keypair[] = []
+    const signers: (Keypair | null)[] = []
     const prerequisiteInstructions: TransactionInstruction[] = []
     const isBid = sideMode === 'Buy'
     if (selectedSolWallet && sellToken && wallet?.publicKey) {
       const orderId = Date.now()
-
       const owner = sellToken.isSol
         ? sellToken.extensions.transferAddress!
         : sellToken.extensions.token!.account.owner
@@ -819,6 +818,7 @@ export default function Orders() {
           quoteTokenMint,
           wallet.publicKey,
         )
+
         market = {
           address: marketIxs.signers[0].publicKey,
           baseMint: () => baseTokenMint,
@@ -836,6 +836,7 @@ export default function Orders() {
         prerequisiteInstructions.push(...marketIxs.ixs)
         signers.push(
           ...marketIxs.signers.map((x) => Keypair.fromSecretKey(x.secretKey)),
+          null,
         )
       }
       const quoteMint = market!.quoteMint()
@@ -981,6 +982,7 @@ export default function Orders() {
     }
 
     const proposalInstructions: InstructionDataWithHoldUpTime[] = []
+
     for (const index in ixes) {
       const ix = ixes[index]
       if (Number(index) === 0) {
@@ -1004,10 +1006,6 @@ export default function Orders() {
         })
       }
     }
-
-    const sellTokenName = tokenPriceService._tokenList.find(
-      (x) => x.address === sellToken?.extensions.mint?.publicKey.toBase58(),
-    )?.name
 
     try {
       const proposalAddress = await handleCreateProposal({
