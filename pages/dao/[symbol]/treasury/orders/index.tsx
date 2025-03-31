@@ -73,6 +73,7 @@ import { getJupiterPricesByMintStrings } from '@hooks/queries/jupiterPrice'
 import { WSOL_MINT_PK } from '@components/instructions/tools'
 import { Description } from '@radix-ui/react-dialog'
 import DescriptionBox from '@components/Orders/DescriptionBox'
+import { Table, Td, Th, TrBody, TrHead } from '@components/TableElements'
 
 export default function Orders() {
   const { fmtUrlWithCluster } = useQueryContext()
@@ -165,6 +166,15 @@ export default function Orders() {
       setSelectedSolWallet(governedTokenAccounts.filter((x) => x.isSol)[0])
     }
   }, [governedTokenAccounts, selectedSolWallet])
+
+  useEffect(() => {
+    setSellToken(null)
+    setSellAmount('0')
+    setPrice('0')
+    setBuyToken(usdcToken)
+    setBuyAmount('0')
+    setSideMode('Sell')
+  }, [selectedSolWallet])
 
   const formattedTableData = async () => {
     if (!openOrders?.length) return []
@@ -1213,6 +1223,7 @@ export default function Orders() {
                 {connected ? (
                   <Button
                     className={`mt-4 flex h-12 w-full items-center justify-center rounded-full bg-button font-bold text-button-text focus:outline-none disabled:cursor-not-allowed disabled:opacity-40 md:hover:bg-button-hover`}
+                    disabled={!sellToken || !buyToken}
                     onClick={() => {
                       const sellTokenName =
                         tokenPriceService._tokenList.find(
@@ -1355,149 +1366,190 @@ export default function Orders() {
       <div>
         {openOrders && openOrders?.length ? (
           <div className="border border-bkg-4 p-6 my-6 mt-0">
-            {loadingFormattedOrders
-              ? [...Array(6)].map((x, i) => (
-                  <Loading className="flex flex-1 rounded-none" key={i}>
-                    <div
-                      className={`h-12 w-full ${
-                        i % 2 ? 'bg-th-bkg-2' : 'bg-th-bkg-3'
-                      }`}
-                    />
-                  </Loading>
-                ))
-              : tableData.map((data, i) => {
-                  const {
-                    baseImageUrl,
-                    baseSymbol,
-                    baseName,
-                    quoteImageUrl,
-                    quoteSymbol,
-                    quoteName,
-                    baseMint,
-                    quoteMint,
-                    orderId,
-                    price,
-                    side,
-                    size,
-                    market,
-                    isBid,
-                    baseProgram,
-                    quoteProgram,
-                    value,
-                    usdValue,
-                  } = data
+            <Table>
+              <thead>
+                <TrHead>
+                  <Th>Order</Th>
+                  <Th>Delta</Th>
+                  <Th>Market price</Th>
+                  <Th>Order price</Th>
+                </TrHead>
+              </thead>
+              <tbody>
+                {loadingFormattedOrders
+                  ? [...Array(6)].map((x, i) => (
+                      <Loading className="flex flex-1 rounded-none" key={i}>
+                        <div
+                          className={`h-12 w-full ${
+                            i % 2 ? 'bg-th-bkg-2' : 'bg-th-bkg-3'
+                          }`}
+                        />
+                      </Loading>
+                    ))
+                  : tableData.map((data, i) => {
+                      const {
+                        baseImageUrl,
+                        baseSymbol,
+                        baseName,
+                        quoteImageUrl,
+                        quoteSymbol,
+                        quoteName,
+                        baseMint,
+                        quoteMint,
+                        orderId,
+                        price,
+                        side,
+                        size,
+                        market,
+                        isBid,
+                        baseProgram,
+                        quoteProgram,
+                        value,
+                        usdValue,
+                      } = data
 
-                  const baseTokenDetails = {
-                    mint: baseMint.toBase58(),
-                    name: baseName,
-                    image_url: baseImageUrl,
-                    symbol: baseSymbol,
-                  }
+                      const baseTokenDetails = {
+                        mint: baseMint.toBase58(),
+                        name: baseName,
+                        image_url: baseImageUrl,
+                        symbol: baseSymbol,
+                      }
 
-                  const quoteTokenDetails = {
-                    mint: quoteMint.toBase58(),
-                    name: quoteName,
-                    image_url: quoteImageUrl,
-                    symbol: quoteSymbol,
-                  }
+                      const quoteTokenDetails = {
+                        mint: quoteMint.toBase58(),
+                        name: quoteName,
+                        image_url: quoteImageUrl,
+                        symbol: quoteSymbol,
+                      }
 
-                  return (
-                    <div
-                      className="default-transition -mx-3 flex items-center gap-3 rounded-xl px-3 hover:bg-th-bkg-3 focus:outline-none"
-                      key={`${orderId}${i}`}
-                    >
-                      <button className="flex w-full items-center justify-between py-3">
-                        <div>
-                          {loadingOpenOrders ? (
-                            <Loading>
-                              <div className="h-4 w-24 bg-th-bkg-2" />
-                            </Loading>
-                          ) : (
-                            <>
-                              <div className="mb-1 flex items-center space-x-2">
-                                {baseImageUrl ? (
-                                  <img
-                                    src={baseImageUrl}
-                                    height={16}
-                                    width={16}
-                                    alt={`${baseSymbol} token logo`}
-                                  />
+                      return (
+                        <TrBody
+                          className="default-transition hover:bg-th-bkg-3 focus:outline-none"
+                          key={`${orderId}${i}`}
+                        >
+                          <Td>
+                            <div className="flex">
+                              <div className="min-w-[300px]">
+                                {loadingOpenOrders ? (
+                                  <Loading>
+                                    <div className="h-4 w-24 bg-th-bkg-2" />
+                                  </Loading>
                                 ) : (
-                                  <QuestionMarkCircleIcon className="w-4 text-th-fgd-4" />
+                                  <>
+                                    <div className="mb-1 flex items-center space-x-2">
+                                      {baseImageUrl ? (
+                                        <img
+                                          src={baseImageUrl}
+                                          height={16}
+                                          width={16}
+                                          alt={`${baseSymbol} token logo`}
+                                        />
+                                      ) : (
+                                        <QuestionMarkCircleIcon className="w-4 text-th-fgd-4" />
+                                      )}
+                                      <div>
+                                        <p
+                                          className={`font-body text-xs xl:text-sm ${
+                                            side === 'buy'
+                                              ? 'text-th-up'
+                                              : 'text-th-down'
+                                          }`}
+                                        >
+                                          {side.toUpperCase()} {size.toString()}{' '}
+                                          {baseSymbol}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                      {quoteImageUrl ? (
+                                        <img
+                                          src={quoteImageUrl}
+                                          height={16}
+                                          width={16}
+                                          alt={`${quoteSymbol} token logo`}
+                                        />
+                                      ) : (
+                                        <QuestionMarkCircleIcon className="w-4 text-th-fgd-4" />
+                                      )}
+                                      <div>
+                                        <p
+                                          className={`font-body text-xs xl:text-sm ${
+                                            side !== 'buy'
+                                              ? 'text-th-up'
+                                              : 'text-th-down'
+                                          }`}
+                                        >
+                                          {side === 'buy' ? 'SELL' : 'BUY'}{' '}
+                                          {value} {quoteSymbol}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </>
                                 )}
-                                <div>
-                                  <p
-                                    className={`font-body text-xs xl:text-sm ${
-                                      side === 'buy'
-                                        ? 'text-th-up'
-                                        : 'text-th-down'
-                                    }`}
-                                  >
-                                    {side.toUpperCase()} {size.toString()}{' '}
-                                    {baseSymbol}
-                                  </p>
-                                </div>
                               </div>
-                              <div className="flex items-center space-x-2">
-                                {quoteImageUrl ? (
-                                  <img
-                                    src={quoteImageUrl}
-                                    height={16}
-                                    width={16}
-                                    alt={`${quoteSymbol} token logo`}
-                                  />
-                                ) : (
-                                  <QuestionMarkCircleIcon className="w-4 text-th-fgd-4" />
-                                )}
-                                <div>
-                                  <p
-                                    className={`font-body text-xs xl:text-sm ${
-                                      side !== 'buy'
-                                        ? 'text-th-up'
-                                        : 'text-th-down'
-                                    }`}
-                                  >
-                                    {side === 'buy' ? 'SELL' : 'BUY'} {value}{' '}
-                                    {quoteSymbol}
-                                  </p>
-                                </div>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                        <div className="flex flex-col items-end">
-                          <p className="mb-1 h-4 text-xs text-th-fgd-2 xl:mb-1.5 xl:text-sm">
-                            {price} {quoteSymbol} per {baseSymbol}
-                          </p>
-                          {usdValue ? (
-                            <p className="h-4 text-xs xl:text-sm">
-                              ~$
-                              {usdValue}
-                            </p>
-                          ) : null}
-                        </div>
-                      </button>
-                      <Button
-                        className="bg-th-down !text-th-button-text md:hover:bg-th-down-dark"
-                        disabled={cancelId === orderId}
-                        onClick={() => {
-                          setShowCustomTitleModal(true)
-                          setInitialTitle('Cancel limit order')
-                          setCurrentTitleCallback(
-                            () => (title: string, description: string) =>
-                              cancelOrder(title, description, orderId),
-                          )
-                        }}
-                      >
-                        {cancelId === Number(orderId) ? (
-                          <Loading className="w-4" />
-                        ) : (
-                          <TrashIcon className="w-4" />
-                        )}
-                      </Button>
-                    </div>
-                  )
-                })}
+                            </div>
+                          </Td>
+                          <Td
+                            className={
+                              price >
+                              tokenPriceService.getUSDTokenPrice(baseMint)
+                                ? 'text-green'
+                                : 'text-red'
+                            }
+                          >
+                            {price >
+                            tokenPriceService.getUSDTokenPrice(baseMint)
+                              ? '+'
+                              : ''}
+                            {(
+                              ((price -
+                                tokenPriceService.getUSDTokenPrice(baseMint)) /
+                                tokenPriceService.getUSDTokenPrice(baseMint)) *
+                              100
+                            ).toFixed(2)}
+                            %
+                          </Td>
+                          <Td>
+                            {tokenPriceService.getUSDTokenPrice(baseMint)}
+                          </Td>
+                          <Td>{Number(price).toFixed(7)}</Td>
+                          <Td className="flex justify-end">
+                            <div className="flex-col items-end mr-3">
+                              <p className="mb-1 h-4 text-xs text-th-fgd-2 xl:mb-1.5 xl:text-sm">
+                                {price} {quoteSymbol} per {baseSymbol}
+                              </p>
+                              {usdValue ? (
+                                <p className="h-4 text-xs xl:text-sm">
+                                  ~$
+                                  {usdValue}
+                                </p>
+                              ) : null}
+                            </div>
+
+                            <Button
+                              className="bg-th-down !text-th-button-text md:hover:bg-th-down-dark"
+                              disabled={cancelId === orderId}
+                              onClick={() => {
+                                setShowCustomTitleModal(true)
+                                setInitialTitle('Cancel limit order')
+                                setCurrentTitleCallback(
+                                  () => (title: string, description: string) =>
+                                    cancelOrder(title, description, orderId),
+                                )
+                              }}
+                            >
+                              {cancelId === Number(orderId) ? (
+                                <Loading className="w-4" />
+                              ) : (
+                                <TrashIcon className="w-4" />
+                              )}
+                            </Button>
+                          </Td>
+                        </TrBody>
+                      )
+                    })}
+              </tbody>
+            </Table>
           </div>
         ) : (
           <div className="flex items-center justify-center rounded-xl border border-bkg-4 p-6">
