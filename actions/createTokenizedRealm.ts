@@ -17,12 +17,19 @@ import {
   withSetRealmAuthority,
 } from '@solana/spl-governance'
 import { PluginName, pluginNameToCanonicalProgramId } from '@constants/plugins'
-import { Keypair, PublicKey, TransactionInstruction } from '@solana/web3.js'
+import {
+  Keypair,
+  PublicKey,
+  SystemProgram,
+  TransactionInstruction,
+} from '@solana/web3.js'
 import { addQVPlugin } from './addPlugins/addQVPlugin'
 import { defaultSybilResistancePass } from '../GatewayPlugin/config'
 import { addGatewayPlugin } from './addPlugins/addGatewayPlugin'
 import { Coefficients } from '@solana/governance-program-library'
 import { addTokenVoterPlugin } from './addPlugins/addTokenVoterPlugin'
+import { solToLamports } from '@marinade.finance/marinade-ts-sdk/dist/src/util'
+import { FEE_WALLET } from '@utils/orders'
 
 type CreateWithPlugin = {
   pluginList: PluginName[]
@@ -56,7 +63,7 @@ export default async function createTokenizedRealm({
   }
 
   if (pluginList.includes('token_voter') && !params.existingCommunityMintPk) {
-    throw new Error("It is mandatory to provide community mint public key.")
+    throw new Error('It is mandatory to provide community mint public key.')
   }
 
   const {
@@ -77,7 +84,7 @@ export default async function createTokenizedRealm({
     wallet,
     ...params,
     communityTokenConfig,
-    pluginList
+    pluginList,
   })
 
   try {
@@ -134,13 +141,13 @@ export default async function createTokenizedRealm({
     }
 
     if (pluginList.includes('token_voter')) {
-      const {instructions} = await addTokenVoterPlugin(
+      const { instructions } = await addTokenVoterPlugin(
         connection,
         wallet as Wallet,
         realmPk,
         communityMintPk,
         programIdPk,
-        params.existingCommunityMintPk!
+        params.existingCommunityMintPk!,
       )
 
       pluginIxes.push(...instructions)
@@ -172,6 +179,13 @@ export default async function createTokenizedRealm({
       ...councilMembersChunks,
       realmInstructions,
       pluginIxes,
+      [
+        SystemProgram.transfer({
+          fromPubkey: walletPk,
+          toPubkey: FEE_WALLET,
+          lamports: solToLamports(0.2).toNumber(),
+        }),
+      ],
     ].map((ixBatch, batchIdx) => ({
       instructionsSet: txBatchesToInstructionSetWithSigners(
         ixBatch,

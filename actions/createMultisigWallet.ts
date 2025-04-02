@@ -7,6 +7,9 @@ import {
   Web3Context,
 } from '@tools/governance/prepareRealmCreation'
 import { trySentryLog } from '@utils/logs'
+import { SystemProgram } from '@solana/web3.js'
+import { FEE_WALLET } from '@utils/orders'
+import { solToLamports } from '@marinade.finance/marinade-ts-sdk/dist/src/util'
 
 /// Creates multisig realm with community mint with 0 supply
 /// and council mint used as multisig token
@@ -42,6 +45,13 @@ export default async function createMultisigWallet({
       ...chunks(mintsSetupInstructions, 5),
       ...councilMembersChunks,
       ...chunks(realmInstructions, 15),
+      [
+        SystemProgram.transfer({
+          fromPubkey: wallet.publicKey!,
+          toPubkey: FEE_WALLET,
+          lamports: solToLamports(0.2).toNumber(),
+        }),
+      ],
     ].map((txBatch) => {
       return {
         instructionsSet: txBatch.map((txInst) => {

@@ -4,7 +4,12 @@ import {
   withCreateTokenOwnerRecord,
   withSetRealmAuthority,
 } from '@solana/spl-governance'
-import { Keypair, PublicKey, TransactionInstruction } from '@solana/web3.js'
+import {
+  Keypair,
+  PublicKey,
+  SystemProgram,
+  TransactionInstruction,
+} from '@solana/web3.js'
 import { AnchorProvider, Wallet } from '@coral-xyz/anchor'
 import {
   SequenceType,
@@ -25,6 +30,8 @@ import {
 } from '@tools/governance/prepareRealmCreation'
 import { trySentryLog } from '@utils/logs'
 import { NftVoterClient } from '@utils/uiTypes/NftVoterClient'
+import { FEE_WALLET } from '@utils/orders'
+import { solToLamports } from '@marinade.finance/marinade-ts-sdk/dist/src/util'
 
 type NFTRealm = Web3Context &
   RealmCreation & {
@@ -203,6 +210,13 @@ export default async function createNFTRealm({
       ...councilMembersChunks,
       realmInstructions,
       nftConfigurationInstructions,
+      [
+        SystemProgram.transfer({
+          fromPubkey: wallet.publicKey!,
+          toPubkey: FEE_WALLET,
+          lamports: solToLamports(0.2).toNumber(),
+        }),
+      ],
     ].map((txBatch, batchIdx) => {
       return {
         instructionsSet: txBatchesToInstructionSetWithSigners(
