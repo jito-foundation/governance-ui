@@ -13,34 +13,55 @@ import { accountsToPubkeyMap } from '@tools/sdk/accounts'
 import { fmtTokenAmount } from '@utils/formatting'
 import { formatNumber } from '@utils/formatNumber'
 
-const fiveMinutesSeconds = 5 * 60
+const thirtyMinutesSeconds = 30 * 60
 const toleranceSeconds = 30
 
-if (!process.env.CLUSTER_URL) {
-  console.error('Please set CLUSTER_URL to a rpc node of choice!')
+const maxRetries = 4
+const retryDelay = 5000
+
+async function sendWebhook(webhookUrl, data, retries = maxRetries) {
+  try {
+    await axios.post(webhookUrl, data)
+    console.log('Webhook Triggered Successfully')
+  } catch (error) {
+    console.error('Webhook Trigger Failed:', error.message)
+    if (retries > 0) {
+      console.log(`Retrying... Attempts left: ${retries}`)
+      await new Promise((resolve) => setTimeout(resolve, retryDelay))
+      await sendWebhook(webhookUrl, data, retries - 1)
+    } else {
+      console.error('All retries failed')
+    }
+  }
+}
+
+if (!process.env.MAINNET_RPC) {
+  console.error('Please set MAINNET_RPC to a rpc node of choice!')
   process.exit(1)
 }
 
-function errorWrapper() {
+export function errorWrapper() {
+  console.log("Running in errorWrapper")
   runNotifier().catch((error) => {
     console.error(error)
   })
 }
 
-// run every 5 mins, checks if a governance proposal just opened in the last 5 mins
-// and notifies on WEBHOOK_URL
-async function runNotifier() {
-  const REALM = process.env.REALM || 'MNGO'
+const REALM = 'Jito'
+const MIN_VOTES_NEEDED = 30_000_000
+
+export async function runNotifier(summaryOnly = false) {
+  console.log('Starting governance notifier')
   const connectionContext = getConnectionContext('mainnet')
   const realmInfo = await getCertifiedRealmInfo(REALM, connectionContext)
 
-  const connection = new Connection(process.env.CLUSTER_URL!)
+  const connection = new Connection(process.env.MAINNET_RPC!)
   console.log(`- getting all governance accounts for ${REALM}`)
   const governances = await getGovernanceAccounts(
     connection,
     realmInfo!.programId,
     Governance,
-    [pubkeyFilter(1, realmInfo!.realmId)!],
+    [pubkeyFilter(1, realmInfo!.realmId)!]
   )
 
   const governancesMap = accountsToPubkeyMap(governances)
@@ -51,7 +72,7 @@ async function runNotifier() {
       return getGovernanceAccounts(connection, realmInfo!.programId, Proposal, [
         pubkeyFilter(1, new PublicKey(governancePk))!,
       ])
-    }),
+    })
   )
 
   console.log(`- scanning all '${REALM}' proposals`)
@@ -84,24 +105,19 @@ async function runNotifier() {
       ) {
         if (
           nowInSeconds - proposal.account.votingCompletedAt.toNumber() <=
-          fiveMinutesSeconds + toleranceSeconds
+          thirtyMinutesSeconds + toleranceSeconds
         ) {
           const votingTokenDecimals = 6
           const yesVotes = fmtTokenAmount(
             proposal.account.getYesVoteCount(),
-            votingTokenDecimals,
+            votingTokenDecimals
           )
           const noVotes = fmtTokenAmount(
             proposal.account.getNoVoteCount(),
-            votingTokenDecimals,
+            votingTokenDecimals
           )
 
-          const minVotesNeeded =
-            proposal.account.governance.toBase58() ===
-            '7D6tGmaMyC8i73Q8X2Fec2S1Zb5rkyai6pctdMqHpHWT'
-              ? 50000000
-              : 100000000
-          const quorumReached = yesVotes >= minVotesNeeded
+          const quorumReached = yesVotes >= MIN_VOTES_NEEDED
           const isSuccess = yesVotes > noVotes && quorumReached
 
           const msg = `
@@ -124,12 +140,14 @@ async function runNotifier() {
           })}
           
           🔗 https://realms.today/dao/${escape(
-            REALM,
+            REALM
           )}/proposal/${proposal.pubkey.toBase58()}`
 
           console.log(msg)
-          if (process.env.WEBHOOK_URL) {
-            axios.post(process.env.WEBHOOK_URL, { content: msg })
+          if (!summaryOnly && process.env.WEBHOOK_URL) {
+            await sendWebhook(process.env.WEBHOOK_URL, {
+              content: msg,
+            })
           }
         }
         countClosed++
@@ -147,7 +165,7 @@ async function runNotifier() {
       if (
         // proposal opened in last 5 mins
         nowInSeconds - proposal.account.votingAt.toNumber() <=
-        fiveMinutesSeconds + toleranceSeconds
+        thirtyMinutesSeconds + toleranceSeconds
         // proposal opened in last 24 hrs - useful to notify when bot recently stopped working
         // and missed the 5 min window
         // (nowInSeconds - proposal.info.votingAt.toNumber())/(60 * 60) <=
@@ -158,12 +176,14 @@ async function runNotifier() {
         const msg = `“${
           proposal.account.name
         }” proposal just opened for voting 🗳 https://realms.today/dao/${escape(
-          REALM,
+          REALM
         )}/proposal/${proposal.pubkey.toBase58()}`
 
         console.log(msg)
-        if (process.env.WEBHOOK_URL) {
-          axios.post(process.env.WEBHOOK_URL, { content: msg })
+        if (!summaryOnly && process.env.WEBHOOK_URL) {
+          await sendWebhook(process.env.WEBHOOK_URL, {
+            content: msg,
+          })
         }
       }
       // note that these could also include those in finalizing state, but this is just for logging
@@ -190,27 +210,34 @@ async function runNotifier() {
         nowInSeconds
       if (
         remainingInSeconds > 86400 &&
-        remainingInSeconds < 86400 + fiveMinutesSeconds + toleranceSeconds
+        remainingInSeconds < 86400 + thirtyMinutesSeconds + toleranceSeconds
       ) {
         const msg = `“${
           proposal.account.name
         }” proposal will close for voting 🗳 https://realms.today/dao/${escape(
-          REALM,
+          REALM
         )}/proposal/${proposal.pubkey.toBase58()} in 24 hrs`
 
         console.log(msg)
-        if (process.env.WEBHOOK_URL) {
-          axios.post(process.env.WEBHOOK_URL, { content: msg })
+        if (!summaryOnly && process.env.WEBHOOK_URL) {
+          await sendWebhook(process.env.WEBHOOK_URL, {
+            content: msg,
+          })
         }
       }
     }
   }
-  console.log(
-    `-- countOpenForVotingSinceSomeTime: ${countOpenForVotingSinceSomeTime}, countJustOpenedForVoting: ${countJustOpenedForVoting}, countVotingNotStartedYet: ${countVotingNotStartedYet}, countClosed: ${countClosed}, countCancelled: ${countCancelled}`,
-  )
+
+  const summary = `countOpenForVotingSinceSomeTime: ${countOpenForVotingSinceSomeTime}, countJustOpenedForVoting: ${countJustOpenedForVoting}, countVotingNotStartedYet: ${countVotingNotStartedYet}, countClosed: ${countClosed}, countCancelled: ${countCancelled}`
+
+  if (summaryOnly && process.env.WEBHOOK_URL) {
+    console.log('Nothing urgent to Report')
+    await sendWebhook(process.env.WEBHOOK_URL, {
+      content: 'Nothing urgent to Report: ' + summary,
+    })
+  }
+
+  console.log(summary)
 }
 
-// start notifier immediately
 errorWrapper()
-
-setInterval(errorWrapper, fiveMinutesSeconds * 1000)

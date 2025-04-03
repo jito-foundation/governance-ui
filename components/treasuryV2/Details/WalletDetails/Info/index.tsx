@@ -7,12 +7,14 @@ import { Wallet } from '@models/treasury/Wallet'
 import Dashboard from './Dashboard'
 import Tab from './Tab'
 import Rules from './Rules'
+
 import {
-  SolanaBreakdowns,
+  // SolanaBreakdowns,
   MultifarmNftExplorer,
 } from '@multifarm/solana-realms'
 
 import { useTabState } from '../../tabState'
+import SolanaBreakdownsV2 from './SolanaBreakdownsV2'
 
 enum Choice {
   Dashboard = 'Dashboard',
@@ -49,7 +51,7 @@ export default function Info(props: Props) {
           <Rules className="py-8" wallet={props.wallet} />
         </Tabs.Content>
         <Tabs.Content value={Choice.Treasury}>
-          <SolanaBreakdowns wallet={props.wallet} />
+          <SolanaBreakdownsV2 wallet={props.wallet} />
         </Tabs.Content>
         <Tabs.Content value={Choice.NFT}>
           <MultifarmNftExplorer className="py-8" wallet={props.wallet} />

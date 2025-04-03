@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import cx from 'classnames'
 import { PublicKey } from '@metaplex-foundation/js'
-import DefiSummary from '@components/TreasuryAccount/DefiSummary'
+// import DefiSummary from '@components/TreasuryAccount/DefiSummary'
 import { Asset } from '@models/treasury/Asset'
 import { Wallet } from '@models/treasury/Wallet'
 import AssetList, { Section } from './AssetList'
@@ -75,7 +75,7 @@ export default function WalletListItem(props: Props) {
       </div>
       {isOpen && (
         <div className="p-2">
-          <DefiSummary wallet={props.wallet} firstWallet={props.firstWallet} />
+          {/* <DefiSummary wallet={props.wallet} firstWallet={props.firstWallet} /> */}
           <AssetList
             governance={governance}
             assets={props.wallet.assets}

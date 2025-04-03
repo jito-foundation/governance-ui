@@ -3548,12 +3548,16 @@
   },
   {
     "symbol": "Jito",
+    "category": "defi",
+    "bannerImage": "https://pbs.twimg.com/profile_banners/1390300692317761546/1623766655/1500x500",
     "displayName": "Jito",
     "programId": "jtogvBNH3WBSWDYD5FJfQP2ZxNTuf82zL8GkEhPeaJx",
     "realmId": "jjCAwuuNpJCNMLAanpwgJZ6cdXzLPXe2GfD6TaDQBXt",
-    "ogImage": "/realms/Jito/jito.png",
-    "website": "https://jito.network",
+    "ogImage": "https://metadata.jito.network/token/jto/image",
+    "website": "https://jito.network/",
     "twitter": "@jito_sol",
+    "discord": "https://discord.com/invite/jito",
+    "github": "https://github.com/jito-foundation",
     "sortRank": 1000
   },
    {

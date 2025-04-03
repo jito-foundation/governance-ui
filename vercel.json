@@ -4,5 +4,15 @@
       "memory": 3009,
       "maxDuration": 90
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/gov-notifier-summary",
+      "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/gov-notifier",
+      "schedule": "*/30 * * * *"
+    }
+  ]
 }
