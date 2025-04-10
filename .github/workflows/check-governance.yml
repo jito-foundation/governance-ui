@@ -1,8 +1,8 @@
 name: Check Gov Notifications
 
 on:
-  schedule:
-    - cron: '0 10 * * *'  # Runs at 10:00 UTC every day (6:00 AM ET)
+  # schedule:
+  #   - cron: '0 10 * * *'  # Runs at 10:00 UTC every day (6:00 AM ET)
   workflow_dispatch:
 
 jobs:
