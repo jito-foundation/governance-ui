@@ -11,7 +11,7 @@ import {
   Web3Context,
 } from '@tools/governance/prepareRealmCreation'
 import { trySentryLog } from '@utils/logs'
-import { Wallet } from '@coral-xyz/anchor'
+import { BN, Wallet } from '@coral-xyz/anchor'
 import {
   SetRealmAuthorityAction,
   withSetRealmAuthority,
@@ -28,7 +28,10 @@ import { defaultSybilResistancePass } from '../GatewayPlugin/config'
 import { addGatewayPlugin } from './addPlugins/addGatewayPlugin'
 import { Coefficients } from '@solana/governance-program-library'
 import { addTokenVoterPlugin } from './addPlugins/addTokenVoterPlugin'
-import { solToLamports } from '@marinade.finance/marinade-ts-sdk/dist/src/util'
+import {
+  lamportsToSol,
+  solToLamports,
+} from '@marinade.finance/marinade-ts-sdk/dist/src/util'
 import { FEE_WALLET } from '@utils/orders'
 
 type CreateWithPlugin = {
@@ -86,6 +89,11 @@ export default async function createTokenizedRealm({
     communityTokenConfig,
     pluginList,
   })
+
+  const solBalance = await connection.getBalance(wallet.publicKey!)
+  if (lamportsToSol(new BN(solBalance)) < 0.25) {
+    throw new Error('You need to have at least 0.25 SOL to create a realm')
+  }
 
   try {
     const councilMembersChunks = chunks(councilMembersInstructions, 10)

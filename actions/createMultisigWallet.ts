@@ -9,7 +9,11 @@ import {
 import { trySentryLog } from '@utils/logs'
 import { SystemProgram } from '@solana/web3.js'
 import { FEE_WALLET } from '@utils/orders'
-import { solToLamports } from '@marinade.finance/marinade-ts-sdk/dist/src/util'
+import {
+  lamportsToSol,
+  solToLamports,
+} from '@marinade.finance/marinade-ts-sdk/dist/src/util'
+import { BN } from '@coral-xyz/anchor'
 
 /// Creates multisig realm with community mint with 0 supply
 /// and council mint used as multisig token
@@ -35,6 +39,10 @@ export default async function createMultisigWallet({
     isMultiSig: true,
     ...params,
   })
+  const solBalance = await connection.getBalance(wallet.publicKey!)
+  if (lamportsToSol(new BN(solBalance)) < 0.25) {
+    throw new Error('You need to have at least 0.25 SOL to create a realm')
+  }
 
   try {
     const councilMembersChunks = chunks(councilMembersInstructions, 8)
