@@ -58,6 +58,7 @@ export default function useRealmProposalVotes(
         realm,
         proposal,
         proposalMint.account,
+        ve
       )
 
       const voteThresholdPct =
