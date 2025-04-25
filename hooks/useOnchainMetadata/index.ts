@@ -1,6 +1,6 @@
 import { AnchorProvider, IdlAccounts, Program, Wallet } from "@coral-xyz/anchor"
 import { MythicMetadata } from "./metadata"
-import { PublicKey } from "@solana/web3.js"
+import { PublicKey, SystemProgram } from "@solana/web3.js"
 import { useConnection } from "@solana/wallet-adapter-react"
 import idl from "./idl.json"
 import { MetadataItems, getMetadata, metadataKeys } from "./metadataKeys"
@@ -13,6 +13,7 @@ export type MetadataItemForList = {
   displayName: string | undefined
   daoImage: string | undefined
   realm: PublicKey
+  issuingAuthority: PublicKey
 }
 
 const metadataProgramId = new PublicKey("metaThtkusoWYDvHBFXfvc93Z3d8iBeDZ4DVyq8SYVR")
@@ -35,14 +36,21 @@ export function useGetOnchainMetadata(realmAddress: PublicKey | undefined) {
         return null
       }
 
+      const authorityOwner = await connection.getAccountInfo(realm.result.account.authority)
+      
       try {
         const treasuryAccount = await getNativeTreasuryAddress(
           realm.result.owner,
           realm.result.account.authority
         )
 
+        const issuingAuthority = 
+          authorityOwner?.owner.equals(SystemProgram.programId) ?
+            realm.result.account.authority :
+            treasuryAccount
+
         const metadataAddress = getMetadata(
-          treasuryAccount,
+          issuingAuthority,
           realm.result.pubkey,
           metadataProgramId
         )
@@ -88,15 +96,16 @@ export function useGetAllMetadata() {
       const metadatas = await client.account.metadata.all()
       const displayNameKeyId = metadataKeys[1].id
       const daoImageKeyId = metadataKeys[2].id
-
+      
       const metadataItems: MetadataItemForList[] = metadatas.map(metadata => {
         const displayName = metadata.account.items.find(i => i.metadataKeyId.eq(displayNameKeyId))?.value.toString()
         const daoImage = metadata.account.items.find(i => i.metadataKeyId.eq(daoImageKeyId))?.value.toString()
-
+        
         return {
           displayName,
           daoImage,
-          realm: metadata.account.subject
+          realm: metadata.account.subject,
+          issuingAuthority: metadata.account.issuingAuthority
         }
       })
 
