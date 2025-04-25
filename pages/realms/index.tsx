@@ -63,14 +63,15 @@ const Realms = () => {
           const realm = certifiedRealms.find((y) => y.realmId.equals(x.pubkey))
 
           if (realm) {
-            return {...realm, communityMint: x.account.communityMint}
+            return {...realm, communityMint: x.account.communityMint, authority: x.account.authority}
           }
 
           return createUnchartedRealmInfo({
             name: x.account.name,
             programId: x.owner.toBase58(),
             address: x.pubkey.toBase58(),
-            communityMint: x.account.communityMint.toBase58()
+            communityMint: x.account.communityMint.toBase58(),
+            authority: x.account.authority?.toBase58()
           })
         }) ?? []
 
@@ -78,10 +79,22 @@ const Realms = () => {
 
       if (metadata) {
         const updatedRealms = allRealms.map((realm) => {
-          const metadataAccount = metadata.find(
-            (m) => m.realm.toBase58() === realm.realmId.toBase58()
-          )
+          const nativeTreasuryAddress = realm.authority ? 
+            PublicKey.findProgramAddressSync(
+              [
+                Buffer.from('native-treasury'),
+                realm.authority.toBuffer()
+              ],
+              realm.programId
+            )[0] :
+            undefined
 
+          const metadataAccount = metadata.find(
+            (m) => m.realm.toBase58() === realm.realmId.toBase58() &&
+              (m.issuingAuthority.toBase58() === realm.authority?.toBase58() || 
+              m.issuingAuthority.toBase58() === nativeTreasuryAddress?.toBase58())
+          )
+          
           if (metadataAccount) {
             return {
               ...realm,
