@@ -141,6 +141,7 @@ import MeshChangeThresholdMember from './components/instructions/Squads/MeshChan
 import SquadsV4AddMember from './components/instructions/Squads/SquadsV4AddMember'
 import SquadsV4ChangeThresholdMember from './components/instructions/Squads/SquadsV4ChangeThresholdMember'
 import PythRecoverAccount from './components/instructions/Pyth/PythRecoverAccount'
+import PythTransferAccount from './components/instructions/Pyth/PythTransferAccount'
 import { useVoteByCouncilToggle } from '@hooks/useVoteByCouncilToggle'
 import BurnTokens from './components/instructions/BurnTokens'
 import RemoveLockup from './components/instructions/Validators/removeLockup'
@@ -154,6 +155,9 @@ import SettleToken from './components/instructions/Manifest/SettleToken'
 import CancelLimitOrder from './components/instructions/Manifest/CancelLimitOrder'
 import WithdrawFees from './components/instructions/Token2022/WithdrawFees'
 import SquadsV4RemoveMember from './components/instructions/Squads/SquadsV4RemoveMember'
+import CollectPoolFees from './components/instructions/Raydium/CollectPoolFees'
+import CollectVestedTokens from './components/instructions/Raydium/CollectVestedTokens'
+import RelinquishDaoVote from './components/instructions/RelinquishDaoVote'
 
 const TITLE_LENGTH_LIMIT = 130
 // the true length limit is either at the tx size level, and maybe also the total account size level (I can't remember)
@@ -514,6 +518,7 @@ const New = () => {
       [Instructions.DualFinanceExerciseStakingOption]: DualExercise,
       [Instructions.DualFinanceDelegate]: DualDelegate,
       [Instructions.DualFinanceDelegateWithdraw]: DualVoteDepositWithdraw,
+      [Instructions.RelinquishDaoVote]: RelinquishDaoVote,
       [Instructions.DualFinanceVoteDeposit]: DualVoteDeposit,
       [Instructions.DaoVote]: DaoVote,
       [Instructions.DistributionCloseVaults]: CloseVaults,
@@ -532,6 +537,7 @@ const New = () => {
         SquadsV4ChangeThresholdMember,
       [Instructions.PythRecoverAccount]: PythRecoverAccount,
       [Instructions.PythUpdatePoolAuthority]: PythUpdatePoolAuthority,
+      [Instructions.PythTransferAccount]: PythTransferAccount,
       [Instructions.CreateSolendObligationAccount]: CreateObligationAccount,
       [Instructions.InitSolendObligationAccount]: InitObligationAccount,
       [Instructions.DepositReserveLiquidityAndObligationCollateral]:
@@ -632,6 +638,8 @@ const New = () => {
       [Instructions.SymmetryEditBasket]: SymmetryEditBasket,
       [Instructions.SymmetryDeposit]: SymmetryDeposit,
       [Instructions.SymmetryWithdraw]: SymmetryWithdraw,
+      [Instructions.CollectPoolFees]: CollectPoolFees ,
+      [Instructions.CollectVestedTokens]: CollectVestedTokens
     }),
     [governance?.pubkey?.toBase58()],
   )

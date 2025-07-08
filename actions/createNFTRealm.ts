@@ -5,12 +5,13 @@ import {
   withSetRealmAuthority,
 } from '@solana/spl-governance'
 import {
+  ComputeBudgetProgram,
   Keypair,
   PublicKey,
   SystemProgram,
   TransactionInstruction,
 } from '@solana/web3.js'
-import { AnchorProvider, Wallet } from '@coral-xyz/anchor'
+import { AnchorProvider, BN, Wallet } from '@coral-xyz/anchor'
 import {
   SequenceType,
   sendTransactionsV3,
@@ -31,7 +32,10 @@ import {
 import { trySentryLog } from '@utils/logs'
 import { NftVoterClient } from '@utils/uiTypes/NftVoterClient'
 import { FEE_WALLET } from '@utils/orders'
-import { solToLamports } from '@marinade.finance/marinade-ts-sdk/dist/src/util'
+import {
+  lamportsToSol,
+  solToLamports,
+} from '@marinade.finance/marinade-ts-sdk/dist/src/util'
 
 type NFTRealm = Web3Context &
   RealmCreation & {
@@ -71,6 +75,10 @@ export default async function createNFTRealm({
     connection,
     wallet,
   })
+  const solBalance = await connection.getBalance(wallet.publicKey!)
+  if (lamportsToSol(new BN(solBalance)) < 0.25) {
+    throw new Error('You need to have at least 0.25 SOL to create a realm')
+  }
 
   console.log('NFT REALM realm public-key', realmPk.toBase58())
   const { registrar } = getRegistrarPDA(
@@ -205,6 +213,10 @@ export default async function createNFTRealm({
       realmSigners,
       nftSigners,
     ]
+
+    const cuLimtIx = ComputeBudgetProgram.setComputeUnitLimit({ units: 800_000})
+    realmInstructions.unshift(cuLimtIx)
+
     const txes = [
       mintsSetupInstructions,
       ...councilMembersChunks,

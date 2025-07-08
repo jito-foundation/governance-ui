@@ -138,11 +138,16 @@ export const ACCOUNT_NAMES = {
   FAFDfoUkaxoMqiNur9F1iigdBNrXFf4uNmS5XrhMewvf:
     'Friends and Family Community Mint',
 
-  // Dean's List DAO
-  '6Vjsy1KabnHtSuHZcXuuCQFWoBML9JscSy3L4NGjqmhM': 'Deans List DAO Treasury',
-  CLgzSdeNcf9CYHiAdmXaPaCw2vYBeiqEeZcgguqirVM9: 'DAO: (DEAN) Strategic Reserve',
-  bDgqY2Qt4y2jSsRNvD7FETkRJJNiYZT1Q3UnAYYzUCo: 'DAO: (DEAN) Community Reserve',
-  BtJaNZrZZmagHGzCU2VazSJWzBS9KY7tG41enBrT2NtU: 'DAO: (DEAN) Liquidity Reserve',
+  // Island DAO
+  '6Vjsy1KabnHtSuHZcXuuCQFWoBML9JscSy3L4NGjqmhM': 'Island DAO Main Treasury',
+  CLgzSdeNcf9CYHiAdmXaPaCw2vYBeiqEeZcgguqirVM9:
+    'DAO: (ISLAND) Strategic Reserve',
+  bDgqY2Qt4y2jSsRNvD7FETkRJJNiYZT1Q3UnAYYzUCo:
+    'DAO: (ISLAND) Community Reserve',
+  BtJaNZrZZmagHGzCU2VazSJWzBS9KY7tG41enBrT2NtU:
+    'DAO: (ISLAND) Liquidity Reserve',
+  HRLdZUitTR6ekSWqR8VqmYnEDVnDy8jhkJPB24t9hoB7:
+    'DAO: (ISLAND) Operations Vault',
 
   // EpicentralDAO
   LABSh5DTebUcUbEoLzXKCiXFJLecDFiDWiBGUU1GpxR: 'LABS Token Mint',
@@ -360,14 +365,19 @@ export const ACCOUNT_NAMES = {
 
   // Xandeum DAO
   '3tWGHdmFd5FPqiZbR9r57qLDTnkxLBLAKno71a72ySQk': 'Xandeum DAO Earnings',
-  '4DZTzekhXx9QpG3MLzp25LGsmDRCUqA1BsVU2KuxCYdF': 'Xandeum DAO Ecosystem Development 1',
-  'A5JXGKq8gJXb4K7hDBRQh7zToDPpjF5RuWHJ1TUnAx6f': 'Xandeum DAO Ecosystem Development 2',
-  'DdphfkqpTJiHRQP6c7qVjtjG8aMQMPhEHpYjrRDSGpsC': 'Xandeum DAO Staking Rewards',
-  'EYu8Zh4odXLkpquHZMT6fKyX35qa84u5WGxZJ1Wi6BCr': 'Xandeum DAO Liquidity Providers',
-  '2dUeHJ1nbfoEJ3Qm9eDLjTG3cqSiCpJUifhEZi1AaW1R': 'Xandeum DAO Community Grants',
-  'GSRBeDfdg4qy5boj1D5DQ1u1YqwDtCfNJFkpDrf2cj1R': 'Xandeum DAO Community Building 1',
-  '9PhjJ2sSnb1iAVmeJdn2ASq4sSXf65rMJ8SpZsfynHnF': 'Xandeum DAO Community Building 2',
-  
+  '4DZTzekhXx9QpG3MLzp25LGsmDRCUqA1BsVU2KuxCYdF':
+    'Xandeum DAO Ecosystem Development 1',
+  A5JXGKq8gJXb4K7hDBRQh7zToDPpjF5RuWHJ1TUnAx6f:
+    'Xandeum DAO Ecosystem Development 2',
+  DdphfkqpTJiHRQP6c7qVjtjG8aMQMPhEHpYjrRDSGpsC: 'Xandeum DAO Staking Rewards',
+  EYu8Zh4odXLkpquHZMT6fKyX35qa84u5WGxZJ1Wi6BCr:
+    'Xandeum DAO Liquidity Providers',
+  '2dUeHJ1nbfoEJ3Qm9eDLjTG3cqSiCpJUifhEZi1AaW1R':
+    'Xandeum DAO Community Grants',
+  GSRBeDfdg4qy5boj1D5DQ1u1YqwDtCfNJFkpDrf2cj1R:
+    'Xandeum DAO Community Building 1',
+  '9PhjJ2sSnb1iAVmeJdn2ASq4sSXf65rMJ8SpZsfynHnF':
+    'Xandeum DAO Community Building 2',
 }
 
 // TODO: Add this to on-chain metadata to Governance account
@@ -407,6 +417,7 @@ export const HIDDEN_PROPOSALS = new Map<string, string>([
   ['3jU2YuKXKBw4cWx9taPDfhQZ8RFLmFUx3HLxMrh7w749', ''],
   ['8eiBtZ7ZgAZEK747z1mXKPktQg3gdbgB9ew78t9LXwyL', ''],
   ['GLdM2J4YkCz3zJ5K9QRsASYBhU3m4X92d2HoUSzgYD9V', ''],
+  ['4fYjxvigTZrcZzo6PAp8xFvs7qhUmiP4ZKBEe5wDi5Td', ''],
 ])
 
 export const DEFAULT_NATIVE_SOL_MINT =
@@ -441,6 +452,7 @@ const HIDDEN_MNGO_TREASURES = [
 //badly created realms
 export const HIDDEN_REALMS = [
   'BWnVbUDohApiiaWBNNGcLH2KXRKEoTBJ7schsKQWYAtj',
+  '4jBriJXRvPBDzZtLNaXNjEgGcGfXrCtgs1EmZ2n7VZYY',
   'FsoDEiZ9BoGTAaCLzXkyQWEqNKa5PW2iokzmuD7YsRdL',
   '9nUyxzVL2FUMuWUiVZG66gwK15CJiM3PoLkfrnGfkvt6', // old Drift dao
   '7mjEBafqqKA2K6SHezMrDV1zBoyNw6SKFcTsBbH2Kxgb', // openBook v2 council wrong config

@@ -1,7 +1,7 @@
 import { AccountType, AssetAccount } from '@utils/uiTypes/assets'
 import { Instructions, PackageEnum } from '@utils/uiTypes/proposalCreationTypes'
 import useGovernanceAssetsStore from 'stores/useGovernanceAssetsStore'
-import { HELIUM_VSR_PLUGINS_PKS, VSR_PLUGIN_PKS } from '../constants/plugins'
+import { HELIUM_VSR_PLUGINS_PKS, TOKEN_VOTER_PK, VSR_PLUGIN_PKS } from '../constants/plugins'
 import { useRealmQuery } from './queries/realm'
 import { useRealmConfigQuery } from './queries/realmConfig'
 import { useRealmGovernancesQuery } from './queries/governance'
@@ -204,11 +204,15 @@ export default function useGovernanceAssets() {
       name: 'Switchboard',
       image: '/img/switchboard.png',
     },
+    [PackageEnum.Raydium]: {
+      name: 'Raydium',
+      image: '/img/raydium.png',
+    },
     [PackageEnum.VsrPlugin]: {
       name: 'Vsr Plugin',
       isVisible:
         currentPluginPk &&
-        [...VSR_PLUGIN_PKS, ...HELIUM_VSR_PLUGINS_PKS].includes(
+        [...VSR_PLUGIN_PKS, ...HELIUM_VSR_PLUGINS_PKS, ...TOKEN_VOTER_PK].includes(
           currentPluginPk.toBase58(),
         ),
     },
@@ -373,6 +377,11 @@ export default function useGovernanceAssets() {
     },
     [Instructions.DualFinanceDelegateWithdraw]: {
       name: 'Withdraw Vote Deposit',
+      isVisible: canUseTransferInstruction,
+      packageId: PackageEnum.Common,
+    },
+    [Instructions.RelinquishDaoVote]: {
+      name: 'Relinquish Vote from DAO',
       isVisible: canUseTransferInstruction,
       packageId: PackageEnum.Common,
     },
@@ -679,6 +688,10 @@ export default function useGovernanceAssets() {
       name: 'Update Pool Authority',
       packageId: PackageEnum.Pyth,
     },
+    [Instructions.PythTransferAccount]: {
+      name: 'Transfer Account',
+      packageId: PackageEnum.Pyth,
+    },
     /*
       ███████ ███████ ██████  ██    ██ ███    ███
       ██      ██      ██   ██ ██    ██ ████  ████
@@ -820,6 +833,22 @@ export default function useGovernanceAssets() {
       packageId: PackageEnum.Switchboard,
     },
 
+    /*
+      ____                 _ _                 
+      |  _ \ __ _ _   _  __| (_)_   _ _ __ ___  
+      | |_) / _` | | | |/ _` | | | | | '_ ` _ \ 
+      |  _ < (_| | |_| | (_| | | |_| | | | | | |
+      |_| \_\__,_|\__, |\__,_|_|\__,_|_| |_| |_|
+                  |___/                         
+    */
+    [Instructions.CollectPoolFees]: {
+      name: 'Collect Pool Fees (CPMM)',
+      packageId: PackageEnum.Raydium,
+    },
+    [Instructions.CollectVestedTokens]: {
+      name: 'Collect Vested Tokens',
+      packageId: PackageEnum.Raydium,
+    },
     /*
       ██    ██ ███████ ██████      ██████  ██      ██    ██  ██████  ██ ███    ██
       ██    ██ ██      ██   ██     ██   ██ ██      ██    ██ ██       ██ ████   ██
