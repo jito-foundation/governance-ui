@@ -9,6 +9,7 @@ import { LockupKind } from 'VoteStakeRegistry/tools/types'
 import { AssetAccount, StakeAccount } from '@utils/uiTypes/assets'
 import { RealmInfo } from '@models/registry/api'
 import * as PaymentStreaming from '@mean-dao/payment-streaming'
+import { DasNftObject } from '@hooks/queries/digitalAssets'
 
 // Alphabetical order
 export enum PackageEnum {
@@ -29,6 +30,7 @@ export enum PackageEnum {
   Squads,
   Switchboard,
   VsrPlugin,
+  Raydium
 }
 
 export interface UiInstruction {
@@ -309,6 +311,13 @@ export interface WithdrawDAOForm {
   amount?: number
 }
 
+export interface RelinquishDaoVoteForm {
+  governedAccount?: AssetAccount
+  mintInfo: MintInfo | undefined
+  realm: string
+  proposal: string
+}
+
 export enum Instructions {
   Base64,
   Burn,
@@ -338,6 +347,7 @@ export enum Instructions {
   DualFinanceStakingOptionWithdraw,
   DualFinanceDelegate,
   DualFinanceDelegateWithdraw,
+  RelinquishDaoVote,
   DualFinanceVoteDeposit,
   DaoVote,
   DistributionCloseVaults,
@@ -397,6 +407,7 @@ export enum Instructions {
   SquadsV4RemoveMember,
   PythRecoverAccount,
   PythUpdatePoolAuthority,
+  PythTransferAccount,
   StakeValidator,
   SwitchboardFundOracle,
   WithdrawFromOracle,
@@ -421,6 +432,8 @@ export enum Instructions {
   SymmetryDeposit,
   SymmetryWithdraw,
   TokenWithdrawFees,
+  CollectPoolFees,
+  CollectVestedTokens
 }
 
 export interface ComponentInstructionData {

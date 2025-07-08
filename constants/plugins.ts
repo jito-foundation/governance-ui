@@ -12,7 +12,11 @@ export const VSR_PLUGIN_PKS: string[] = [
   '5sWzuuYkeWLBdAv3ULrBfqA51zF7Y4rnVzereboNDCPn',
   'HBZ5oXbFBFbr8Krt2oMU7ApHFeukdRS8Rye1f3T66vg5',
   '4Q6WW2ouZ6V3iaNm56MTd5n2tnTm4C5fiH8miFHnAFHo',
+  'vsRJM68m7i18PwzTFphgPYXTujCgxEi28knpUwSmg3q',
+  '9SJqwCQ5AJkFtC7zxfFsF6Y5dm22XzN3JEhn3N14v23t'
 ]
+
+export const CUSTOM_BIO_VSR_PLUGIN_PK = "9SJqwCQ5AJkFtC7zxfFsF6Y5dm22XzN3JEhn3N14v23t"
 
 export const HELIUM_VSR_PLUGINS_PKS: string[] = [
   HELIUM_VSR_PROGRAM_ID.toBase58(),

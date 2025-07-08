@@ -14,6 +14,7 @@ export interface RealmInfo {
   programId: PublicKey
   programVersion?: number
   realmId: PublicKey
+  authority?: PublicKey
   website?: string
   // Specifies the realm mainnet name for resource lookups
   // It's required for none mainnet environments when the realm name is different than on mainnet
@@ -108,6 +109,7 @@ export function createUnchartedRealmInfo(realm: UnchartedRealm) {
     programId: new PublicKey(realm.programId),
     realmId: new PublicKey(realm.address),
     communityMint: new PublicKey(realm.communityMint),
+    authority: realm.authority ? new PublicKey(realm.authority) : undefined,
     displayName: realm.name,
     isCertified: false,
     enableNotifi: true, // enable by default
@@ -119,4 +121,5 @@ type UnchartedRealm = {
   programId: string
   address: string
   communityMint: string
+  authority?: string
 }
