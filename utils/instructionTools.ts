@@ -19,6 +19,10 @@ import {
   getMintNaturalAmountFromDecimal,
   parseMintNaturalAmountFromDecimal,
 } from '@tools/sdk/units'
+import {
+  getStakePoolAccount,
+  STAKE_POOL_PROGRAM_ID,
+} from '@solana/spl-stake-pool'
 import { ConnectionContext } from 'utils/connection'
 import { getATA } from './ataTools'
 import { isBatchFormValid, isFormValid } from './formValidation'
@@ -29,14 +33,13 @@ import {
   createUpdateMetadataAccountV2Instruction,
 } from '@metaplex-foundation/mpl-token-metadata'
 import { findMetadataPda } from '@metaplex-foundation/js'
-import { lidoStake } from '@utils/lidoStake'
 import {
   createTransferCheckedInstruction,
-  createTransferInstruction,
-  getAssociatedTokenAddress,
   getAssociatedTokenAddressSync,
   TOKEN_2022_PROGRAM_ID,
+  createAssociatedTokenAccountIdempotentInstruction,
 } from '@solana/spl-token-new'
+import { JITO_STAKE_POOL_ACCOUNT, JITOSOL_MINT_ADDRESS } from '../components/TreasuryAccount/ConvertToJitoSol'
 
 export const validateInstruction = async ({
   schema,
@@ -473,6 +476,112 @@ export async function getMintInstruction({
   return obj
 }
 
+export async function getConvertToJitoSolInstruction({
+  schema,
+  form,
+  connection,
+  wallet,
+  setFormErrors,
+}: {
+  schema: any
+  form: any
+  connection: ConnectionContext
+  wallet: WalletAdapter | undefined
+  setFormErrors: any
+}): Promise<UiInstruction> {
+  const isValid = await validateInstruction({ schema, form, setFormErrors })
+  const prerequisiteInstructions: TransactionInstruction[] = []
+  let serializedInstruction = ''
+
+  if (isValid && form?.governedTokenAccount?.extensions?.transferAddress) {
+    const amount = getMintNaturalAmountFromDecimal(
+      form.amount,
+      form.governedTokenAccount.extensions.mint.account.decimals,
+    )
+    const originAccount = form.governedTokenAccount.extensions.transferAddress
+
+    let destinationTokenAccount: PublicKey | undefined
+
+    if (form.destinationAccount) {
+      destinationTokenAccount = form.destinationAccount.pubkey
+    } else {
+      const { currentAddress: jitoSolAta, needToCreateAta } = await getATA({
+        connection: connection,
+        receiverAddress: originAccount,
+        mintPK: JITOSOL_MINT_ADDRESS,
+        wallet,
+      })
+      destinationTokenAccount = jitoSolAta
+      
+      if (needToCreateAta && wallet?.publicKey) {
+        prerequisiteInstructions.push(
+          createAssociatedTokenAccountIdempotentInstruction(
+            wallet.publicKey, // payer
+            destinationTokenAccount, // ata
+            originAccount, // owner
+            JITOSOL_MINT_ADDRESS, // mint
+          ),
+        )
+      }
+    }
+
+    try {
+      const stakePoolAccount = await getStakePoolAccount(
+        connection.current,
+        JITO_STAKE_POOL_ACCOUNT,
+      )
+
+      if (!stakePoolAccount) {
+        throw new Error('Failed to get stake pool account data')
+      }
+
+      const [withdrawAuthority] = PublicKey.findProgramAddressSync(
+        [JITO_STAKE_POOL_ACCOUNT.toBuffer(), Buffer.from('withdraw')],
+        STAKE_POOL_PROGRAM_ID,
+      )
+
+      // Note: Using governance account directly as funding account (no ephemeral transfer like in spl stake pool library)
+      const keys = [
+        { pubkey: JITO_STAKE_POOL_ACCOUNT, isSigner: false, isWritable: true },
+        { pubkey: withdrawAuthority, isSigner: false, isWritable: false },
+        { pubkey: stakePoolAccount.account.data.reserveStake, isSigner: false, isWritable: true },
+        { pubkey: originAccount, isSigner: true, isWritable: true }, // governance account as funding
+        { pubkey: destinationTokenAccount, isSigner: false, isWritable: true },
+        { pubkey: stakePoolAccount.account.data.managerFeeAccount, isSigner: false, isWritable: true },
+        { pubkey: destinationTokenAccount, isSigner: false, isWritable: true }, 
+        { pubkey: stakePoolAccount.account.data.poolMint, isSigner: false, isWritable: true },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+        { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+      ]
+
+      // Create instruction data: 1 byte for instruction index (14) + 8 bytes for lamports
+      const instructionData = Buffer.alloc(9)
+      instructionData.writeUInt8(14, 0) // DepositSol instruction index
+      instructionData.writeBigInt64LE(BigInt(amount), 1) // lamports amount
+
+      const depositSolInstruction = new TransactionInstruction({
+        programId: STAKE_POOL_PROGRAM_ID,
+        keys,
+        data: instructionData,
+      })
+
+      serializedInstruction = serializeInstructionToBase64(depositSolInstruction)
+    } catch (error) {
+      console.error('Error creating JitoSOL deposit instructions:', error)
+      throw Error(`Failed to create JitoSOL deposit instructions: ${error}`)
+    }
+  }
+
+  const obj: UiInstruction = {
+    serializedInstruction,
+    isValid,
+    governance: form.governedTokenAccount?.governance,
+    prerequisiteInstructions: prerequisiteInstructions,
+  }
+
+  return obj
+}
+
 export async function getConvertToMsolInstruction({
   schema,
   form,
@@ -546,6 +655,7 @@ export async function getConvertToMsolInstruction({
     const { transaction } = await marinade.deposit(new BN(amount), {
       mintToOwnerAddress: destinationAccountOwner,
     })
+    console.log('transaction', transaction)
 
     if (transaction.instructions.length === 1) {
       serializedInstruction = serializeInstructionToBase64(
@@ -570,100 +680,6 @@ export async function getConvertToMsolInstruction({
   }
 
   return obj
-}
-
-export async function getConvertToStSolInstruction({
-  schema,
-  form,
-  connection,
-  wallet,
-  setFormErrors,
-  config,
-}: {
-  schema: any
-  form: any
-  connection: ConnectionContext
-  wallet: WalletAdapter | undefined
-  setFormErrors: any
-  config: any
-}): Promise<UiInstruction> {
-  const isValid = await validateInstruction({ schema, form, setFormErrors })
-  const prerequisiteInstructions: TransactionInstruction[] = []
-  let serializedInstruction = ''
-
-  if (isValid && form.governedTokenAccount.extensions.transferAddress) {
-    const amount = getMintNaturalAmountFromDecimal(
-      form.amount,
-      form.governedTokenAccount.extensions.mint.account.decimals,
-    )
-    let originAccount = form.governedTokenAccount.extensions.transferAddress
-    let associatedStSolAccount: PublicKey
-
-    if (form.destinationAccount) {
-      associatedStSolAccount = form.destinationAccount.pubkey
-
-      const stSolToken = new Token(
-        connection.current,
-        config.stSolMint,
-        TOKEN_PROGRAM_ID,
-        null as unknown as Keypair,
-      )
-
-      const destinationAccountInfo = await stSolToken.getAccountInfo(
-        associatedStSolAccount,
-      )
-      originAccount = destinationAccountInfo.owner
-    } else {
-      const { currentAddress: stSolAccount, needToCreateAta } = await getATA({
-        connection: connection,
-        receiverAddress: originAccount,
-        mintPK: config.stSolMint,
-        wallet,
-      })
-      associatedStSolAccount = stSolAccount
-      if (needToCreateAta && wallet?.publicKey) {
-        prerequisiteInstructions.push(
-          Token.createAssociatedTokenAccountInstruction(
-            ASSOCIATED_TOKEN_PROGRAM_ID,
-            TOKEN_PROGRAM_ID,
-            config.stSolMint,
-            associatedStSolAccount,
-            originAccount,
-            wallet.publicKey,
-          ),
-        )
-      }
-    }
-
-    const transaction = await lidoStake({
-      connection: connection.current,
-      payer: originAccount,
-      stSolAddress: associatedStSolAccount,
-      amount,
-      config,
-    })
-
-    if (transaction.instructions.length === 1) {
-      serializedInstruction = serializeInstructionToBase64(
-        transaction.instructions[0],
-      )
-    } else if (transaction.instructions.length === 2) {
-      serializedInstruction = serializeInstructionToBase64(
-        transaction.instructions[1],
-      )
-    } else {
-      throw Error(
-        `Lido's lidoStake instructions could not be calculated correctly.`,
-      )
-    }
-  }
-
-  return {
-    serializedInstruction,
-    isValid,
-    governance: form.governedTokenAccount?.governance,
-    prerequisiteInstructions: prerequisiteInstructions,
-  }
 }
 
 export async function getCreateTokenMetadataInstruction({

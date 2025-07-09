@@ -12,11 +12,11 @@ import { StrategyCard } from '@components/TreasuryAccount/AccountOverview'
 import DepositModal from 'Strategies/components/DepositModal'
 import Modal from '@components/Modal'
 import ConvertToMsol from '@components/TreasuryAccount/ConvertToMsol'
-import ConvertToStSol from '@components/TreasuryAccount/ConvertToStSol'
 import Trade from '@components/TreasuryAccount/Trade'
 import useTreasuryAccountStore from 'stores/useTreasuryAccountStore'
 import MangoModal from '@components/TreasuryAccount/MangoModal'
 import useLegacyConnectionContext from '@hooks/useLegacyConnectionContext'
+import ConvertToJitoSol from '../../../TreasuryAccount/ConvertToJitoSol'
 
 interface Props {
   className?: string
@@ -35,7 +35,7 @@ export default function Investments(props: Props) {
     useState<ActiveInvestment | null>(null)
 
   const [alternativeInvestment, setAlternativeInvestment] = useState<
-    'Marinade' | 'Lido' | 'Poseidon' | 'Mango' | null
+    'Marinade' | 'Jito' | 'Poseidon' | 'Mango' | null
   >(null)
 
   const investments = useAccountInvestments({
@@ -138,7 +138,7 @@ export default function Investments(props: Props) {
                     onClick={() => {
                       switch (investment.protocolName) {
                         case 'Marinade':
-                        case 'Lido':
+                        case 'Jito':
                         case 'Mango':
                         case 'Poseidon': {
                           setAlternativeInvestment(investment.protocolName)
@@ -206,13 +206,13 @@ export default function Investments(props: Props) {
               <ConvertToMsol />
             </Modal>
           )}
-          {alternativeInvestment === 'Lido' && (
+          {alternativeInvestment === 'Jito' && (
             <Modal
               isOpen
               sizeClassName="sm:max-w-3xl"
               onClose={() => setAlternativeInvestment(null)}
             >
-              <ConvertToStSol />
+              <ConvertToJitoSol />
             </Modal>
           )}
           {alternativeInvestment === 'Poseidon' && (

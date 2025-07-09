@@ -17,22 +17,26 @@ import VoteBySwitch from 'pages/dao/[symbol]/proposal/components/VoteBySwitch'
 import Button from '@components/Button'
 import Tooltip from '@components/Tooltip'
 import { getStakeSchema } from '@utils/validations'
-import { getConvertToStSolInstruction } from '@utils/instructionTools'
+import { getConvertToJitoSolInstruction } from '@utils/instructionTools'
 import { getInstructionDataFromBase64 } from '@solana/spl-governance'
 import useQueryContext from '@hooks/useQueryContext'
 import { useRouter } from 'next/router'
 import { notify } from '@utils/notifications'
 import useCreateProposal from '@hooks/useCreateProposal'
 import { AssetAccount } from '@utils/uiTypes/assets'
-import { PublicKey } from '@solana/web3.js'
 import useWalletOnePointOh from '@hooks/useWalletOnePointOh'
 import { useRealmQuery } from '@hooks/queries/realm'
 import useLegacyConnectionContext from '@hooks/useLegacyConnectionContext'
-import {
-  LIDO_PROGRAM_ID,
-  LIDO_PROGRAM_ID_DEVNET,
-} from '@constants/pubkeys/lido'
 import { useVoteByCouncilToggle } from '@hooks/useVoteByCouncilToggle'
+import { PublicKey } from '@solana/web3.js'
+
+export const JITOSOL_MINT_ADDRESS = new PublicKey(
+  'J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn',
+)
+
+export const JITO_STAKE_POOL_ACCOUNT = new PublicKey(
+  'Jito4APyf642JPZPx3hGc6WWJ8zPKtRbRs4P815Awbb',
+)
 
 const defaultFormState = {
   destinationAccount: undefined,
@@ -44,17 +48,12 @@ const defaultFormState = {
 
 const notConnectedMessage =
   'You need to be connected to your wallet to have the ability to create a staking proposal'
+
 const getProposalText = (amount) => {
-  return `Convert ${amount} SOL to stSOL`
+  return `Convert ${amount} SOL to JitoSOL`
 }
 
-const LIDO_ADDRESS = '49Yi1TKkNyYjPAFdR9LBvoHcUjuPX4Df5T5yv39w2XTn'
-const STSOL_MINT = '7dHbWXmci3dT8UFYWYZweBLXgycu7Y3iL6trKn1Y7ARj'
-
-const LIDO_ADDRESS_DEVNET = '8sqs4Jzs8uq7CEtimhXf32gioVUN3n5Qk65YMkNU5E4F'
-const STSOL_MINT_DEVNET = '5nnLCgZn1EQaLj1ub8vYbQgBhkWi97x4JC5ARVPhci4V'
-
-const ConvertToStSol = () => {
+const ConvertToJitoSol = () => {
   const realm = useRealmQuery().data?.result
   const { symbol } = useRealm()
   const { canUseTransferInstruction } = useGovernanceAssets()
@@ -62,21 +61,22 @@ const ConvertToStSol = () => {
   const { fmtUrlWithCluster } = useQueryContext()
   const router = useRouter()
   const { handleCreateProposal } = useCreateProposal()
-
   const connection = useLegacyConnectionContext()
   const wallet = useWalletOnePointOh()
   const currentAccount = useTreasuryAccountStore((s) => s.currentAccount)
 
   const [formErrors, setFormErrors] = useState({})
-  const [stSolTokenAccounts, setStSolTokenAccounts] = useState<AssetAccount[]>(
-    [],
-  )
   const [form, setForm] = useState<StakingViewForm>(defaultFormState)
   const [showOptions, setShowOptions] = useState(false)
   const { voteByCouncil, shouldShowVoteByCouncilToggle, setVoteByCouncil } =
     useVoteByCouncilToggle()
   const [isLoading, setIsLoading] = useState(false)
 
+  const jitoSolTokenAccounts = governedTokenAccounts.filter(
+    (acc) =>
+      acc.extensions.mint?.publicKey.toString() ===
+      JITOSOL_MINT_ADDRESS.toString(),
+  )
   const mintMinAmount = form.governedTokenAccount?.extensions?.mint
     ? getMintMinAmountAsDecimal(
         form.governedTokenAccount.extensions.mint.account,
@@ -90,27 +90,15 @@ const ConvertToStSol = () => {
   }
 
   const handlePropose = async () => {
-    setIsLoading(true)
+    if (currentAccount?.governance === undefined) throw new Error()
 
-    let config = {
-      lidoAddress: new PublicKey(LIDO_ADDRESS),
-      stSolMint: new PublicKey(STSOL_MINT),
-      programId: new PublicKey(LIDO_PROGRAM_ID),
-    }
-    if (connection.cluster === 'devnet') {
-      config = {
-        lidoAddress: new PublicKey(LIDO_ADDRESS_DEVNET),
-        stSolMint: new PublicKey(STSOL_MINT_DEVNET),
-        programId: new PublicKey(LIDO_PROGRAM_ID_DEVNET),
-      }
-    }
-    const instruction: UiInstruction = await getConvertToStSolInstruction({
+    setIsLoading(true)
+    const instruction: UiInstruction = await getConvertToJitoSolInstruction({
       schema,
       form,
       connection,
       wallet,
       setFormErrors,
-      config,
     })
 
     if (instruction.isValid) {
@@ -134,7 +122,7 @@ const ConvertToStSol = () => {
         const proposalAddress = await handleCreateProposal({
           title: form.title ? form.title : getProposalText(form.amount),
           description: form.description ? form.description : '',
-          governance: currentAccount!.governance!,
+          governance: currentAccount?.governance,
           instructionsData: [instructionData],
           voteByCouncil,
           isDraft: false,
@@ -158,25 +146,15 @@ const ConvertToStSol = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- TODO please fix, it can cause difficult bugs. You might wanna check out https://bobbyhadz.com/blog/react-hooks-exhaustive-deps for info. -@asktree
   }, [currentAccount, form.destinationAccount])
 
-  useEffect(() => {
-    const stSolMint =
-      connection.cluster === 'devnet' ? STSOL_MINT_DEVNET : STSOL_MINT
-    const stSolAccounts = governedTokenAccounts.filter((acc) => {
-      return acc.extensions.mint?.publicKey.toString() === stSolMint
-    })
-    setStSolTokenAccounts(stSolAccounts)
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- TODO please fix, it can cause difficult bugs. You might wanna check out https://bobbyhadz.com/blog/react-hooks-exhaustive-deps for info. -@asktree
-  }, [connection.cluster])
-
   return (
     <>
-      <h3 className="mb-4 flex items-center">Convert SOL to stSOL</h3>
-      <AccountLabel />
+      <h3 className="mb-4 flex items-center">Convert SOL to JitoSOL</h3>
+      <AccountLabel></AccountLabel>
       <div className="space-y-4 w-full pb-4">
-        {stSolTokenAccounts.length > 0 && (
+        {jitoSolTokenAccounts.length > 0 && (
           <GovernedAccountSelect
-            label="stSOL Treasury account"
-            governedAccounts={stSolTokenAccounts as AssetAccount[]}
+            label="JitoSOL Treasury account"
+            governedAccounts={jitoSolTokenAccounts as AssetAccount[]}
             shouldBeGoverned={false}
             governance={currentAccount?.governance}
             value={form.destinationAccount}
@@ -261,7 +239,7 @@ const ConvertToStSol = () => {
                   propertyName: 'description',
                 })
               }
-            />
+            ></Textarea>
             {shouldShowVoteByCouncilToggle && (
               <VoteBySwitch
                 checked={voteByCouncil}
@@ -289,4 +267,4 @@ const ConvertToStSol = () => {
   )
 }
 
-export default ConvertToStSol
+export default ConvertToJitoSol
