@@ -43,7 +43,7 @@ export const useJoinRealm = (): UseJoinRealmReturnType => {
     async (includeTokenOwnerRecord = true) => {
       if (!wallet?.publicKey) return []
 
-      const onboardUserIxes = []
+      const onboardUserIxes: TransactionInstruction[] = []
       if (
         includeTokenOwnerRecord &&
         userNeedsTokenOwnerRecord &&
