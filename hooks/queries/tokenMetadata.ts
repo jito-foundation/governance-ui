@@ -65,27 +65,42 @@ export const useTokensMetadata = (
       ? tokenMetadataQueryKeys.byMints(connection.cluster, mints)
       : undefined,
     queryFn: async () => {
-      const data: { symbol: string; name: string; mint: string }[] = []
-      for (const mint of mints) {
-        const metadataAccount = findMetadataPda(mint)
-        const metadata = await Metadata.fromAccountAddress(
-          connection.current,
-          metadataAccount,
-        )
+      // Fetch all metadata in parallel
+      const results = await Promise.allSettled(
+        mints.map(async (mint) => {
+          const metadataAccount = findMetadataPda(mint)
+          const metadata = await Metadata.fromAccountAddress(
+            connection.current,
+            metadataAccount,
+          )
 
-        //Do not use data.img we don't want to have unsafe imgs to show in realms.
-        data.push({
-          mint: mint.toBase58(),
-          symbol: metadata.data.symbol,
-          name: metadata.data.name,
-        })
+          // Cache individual result
+          queryClient.setQueryData(
+            tokenMetadataQueryKeys.byMint(connection.cluster, mint),
+            metadata.data,
+          )
 
-        // we dont want to re-fetch for the individual one
-        queryClient.setQueryData(
-          tokenMetadataQueryKeys.byMint(connection.cluster, mint),
-          metadata.data,
+          return {
+            mint: mint.toBase58(),
+            symbol: metadata.data.symbol,
+            name: metadata.data.name,
+          }
+        }),
+      )
+
+      // Filter out failures and return successful results
+      const data = results
+        .filter((result): result is PromiseFulfilledResult<{ symbol: string; name: string; mint: string }> => 
+          result.status === 'fulfilled'
         )
+        .map((result) => result.value)
+
+      // Log any failures for debugging
+      const failures = results.filter((result) => result.status === 'rejected')
+      if (failures.length > 0) {
+        console.warn(`Failed to fetch metadata for ${failures.length} token(s)`)
       }
+
       return data
     },
     staleTime: OneHMs,
