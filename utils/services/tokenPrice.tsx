@@ -10,12 +10,79 @@ import { USDC_MINT } from '@blockworks-foundation/mango-v4'
 import { useLocalStorage } from '@hooks/useLocalStorage'
 import { getJupiterPricesByMintStrings } from '@hooks/queries/jupiterPrice'
 
-const tokenListUrl = 'https://tokens.jup.ag/tokens?tags=verified,lst'
+const TOKEN_API_URL = 'https://lite-api.jup.ag/tokens/v2'
+const tokenListUrl = `${TOKEN_API_URL}/tag?query=verified`
 const CACHE_TTL_MS = 1000 * 60 * 60 * 24 // 24 hours
 const PRICE_STORAGE_KEY = 'tokenPrices'
 const PRICE_CACHE_TTL_MS = 1000 * 60 * 5 // 5 minutes TTL
 
 export type TokenInfoJupiter = TokenInfo
+
+// Token API V2 Response Types
+type TokenV2 = {
+  id: string
+  name: string
+  symbol: string
+  icon?: string
+  decimals: number
+  circSupply?: number
+  totalSupply?: number
+  tokenProgram: string
+  firstPool?: {
+    id: string
+    createdAt: string
+  }
+  holderCount?: number
+  audit?: {
+    mintAuthorityDisabled: boolean
+    freezeAuthorityDisabled: boolean
+    topHoldersPercentage: number
+    isSus?: boolean
+  }
+  organicScore?: number
+  organicScoreLabel?: string
+  isVerified?: boolean
+  cexes?: string[]
+  tags?: string[]
+  fdv?: number
+  mcap?: number
+  usdPrice?: number
+  priceBlockId?: number
+  liquidity?: number
+  ctLikes?: number
+  smartCtLikes?: number
+  updatedAt?: string
+}
+
+// Helper function to convert TokenV2 to TokenInfo format
+function convertTokenV2ToTokenInfo(tokenV2: TokenV2): TokenInfo {
+  return {
+    chainId: 101, // Solana mainnet
+    address: tokenV2.id,
+    name: tokenV2.name,
+    decimals: tokenV2.decimals,
+    symbol: tokenV2.symbol,
+    logoURI: tokenV2.icon,
+    tags: tokenV2.tags,
+    extensions: {
+      coingeckoId: undefined, // V2 API doesn't provide this directly
+    },
+  }
+}
+
+// Search for tokens by mint address using Token API V2
+async function searchJupiterTokens(mintAddress: string): Promise<TokenV2[]> {
+  try {
+    const response = await fetch(`${TOKEN_API_URL}/search?query=${encodeURIComponent(mintAddress)}`)
+    if (!response.ok) {
+      throw new Error(`Token search failed: ${response.statusText}`)
+    }
+    return (await response.json()) as TokenV2[]
+  } catch (error) {
+    console.error('Error searching Jupiter tokens:', error)
+    return []
+  }
+}
 
 class TokenPriceService {
   _tokenList: TokenInfo[]
@@ -30,29 +97,6 @@ class TokenPriceService {
     this._unverifiedTokenCache = {}
   }
 
-  async fetchSolanaTokenList() {
-    try {
-      const tokens = await axios.get(tokenListUrl)
-      const tokenList = tokens.data as TokenInfo[]
-      if (tokenList && tokenList.length) {
-        this._tokenList = tokenList.map((token) => {
-          const override = overrides[token.address]
-
-          if (override) {
-            return mergeDeepRight(token, override)
-          }
-
-          return token
-        })
-      }
-    } catch (e) {
-      console.log(e)
-      notify({
-        type: 'error',
-        message: 'unable to fetch token list',
-      })
-    }
-  }
 
   async fetchSolanaTokenListV2(): Promise<TokenInfo[]> {
     const storage = useLocalStorage()
@@ -64,17 +108,18 @@ class TokenPriceService {
     try {
       if (!tokenListRaw || !ttl || Date.now() > Number(ttl)) {
         const response = await axios.get(tokenListUrl)
-        const tokens = response.data as TokenInfo[]
+        const tokensV2 = response.data as TokenV2[]
 
-        if (tokens && tokens.length) {
-          tokenList = tokens.map((token) => {
-            const override = overrides[token.address]
+        if (tokensV2 && tokensV2.length) {
+          const convertedList = tokensV2.map(convertTokenV2ToTokenInfo)
+          tokenList = convertedList.map((tokenInfo) => {
+            const override = overrides[tokenInfo.address]
 
             if (override) {
-              return mergeDeepRight(token, override)
+              return mergeDeepRight(tokenInfo, override)
             }
 
-            return token
+            return tokenInfo
           })
 
           storage.setItem('tokenList', JSON.stringify(tokenList))
@@ -104,9 +149,9 @@ class TokenPriceService {
     const cachedPrices = cachedPricesData
       ? JSON.parse(cachedPricesData)
       : {
-          prices: {},
-          ttl: '0',
-        }
+        prices: {},
+        ttl: '0',
+      }
     const tokenList = await this.fetchSolanaTokenListV2()
     const symbolMap = Object.fromEntries(
       tokenList.map((token) => [token.address, token.symbol]),
@@ -305,60 +350,58 @@ class TokenPriceService {
   // This async method is used to lookup additional tokens not on JUP's strict list
   async getTokenInfoAsync(
     mintAddress: string,
+    totalPrice?: number,
   ): Promise<TokenInfoJupiter | undefined> {
-    const tokenInfo: TokenInfoJupiter | undefined =
-      this._unverifiedTokenCache[mintAddress] || undefined
+    try {
+      const tokenInfo: TokenInfoJupiter | undefined =
+        this._unverifiedTokenCache[mintAddress] || undefined
 
-    if (tokenInfo) {
-      return tokenInfo
-    }
-    if (!mintAddress || mintAddress.trim() === '') {
+      if (tokenInfo) {
+        return tokenInfo
+      }
+      if (!mintAddress || mintAddress.trim() === '') {
+        return undefined
+      }
+      // Check the strict token list first
+      const tokenListRecord = this._tokenList?.find(
+        (x) => x.address === mintAddress,
+      )
+      if (tokenListRecord) {
+        return tokenListRecord
+      }
+      // Check the unverified token list cache next to avoid repeatedly loading token metadata
+      if (this._unverifiedTokenCache[mintAddress]) {
+        return this._unverifiedTokenCache[mintAddress]
+      }
+
+      // Fetch from Token API V2 search endpoint -- but very slow
+      if (!!totalPrice && !isNaN(totalPrice) && totalPrice > 1) {
+        try {
+          const searchResults = await searchJupiterTokens(mintAddress)
+          if (searchResults && searchResults.length > 0) {
+            // Find exact match by mint address
+            const exactMatch = searchResults.find((token) => token.id === mintAddress)
+            if (exactMatch) {
+              const convertedToken = convertTokenV2ToTokenInfo(exactMatch)
+              // Add to unverified token cache
+              this._unverifiedTokenCache[mintAddress] = convertedToken
+              return convertedToken
+            }
+          }
+        } catch (error) {
+          console.error(`Token API V2 search failed for ${mintAddress}:`, error)
+        }
+      }
+
+      return undefined
+    } catch (e) {
+      console.error(e)
+      notify({
+        type: 'error',
+        message: 'Unable to fetch token information',
+      })
       return undefined
     }
-    // Check the strict token list first
-    const tokenListRecord = this._tokenList?.find(
-      (x) => x.address === mintAddress,
-    )
-    if (tokenListRecord) {
-      return tokenListRecord
-    }
-    // Check the unverified token list cache next to avoid repeatedly loading token metadata
-    if (this._unverifiedTokenCache[mintAddress]) {
-      return this._unverifiedTokenCache[mintAddress]
-    }
-
-    // logo not found so we return no data.
-    return undefined
-    // Get the token data from JUP's api
-    // try {
-    //   const requestURL = `https://tokens.jup.ag/token/${mintAddress}`
-    //   const response = await axios.get(requestURL)
-    //   if (response.data) {
-    //     // Remove decimals and add chainId to match the TokenInfoWithoutDecimals struct
-    //     const { decimals, ...tokenInfoWithoutDecimals } = response.data
-
-    //     const finalTokenInfo = {
-    //       ...tokenInfoWithoutDecimals,
-    //       chainId: 101,
-    //     }
-    //     // Add to unverified token cache
-    //     this._unverifiedTokenCache[mintAddress] = finalTokenInfo
-    //     return finalTokenInfo
-    //   } else {
-    //     return undefined
-    //   }
-    // } catch {
-    //   console.error(`Metadata retrieving failed for ${mintAddress}`)
-    //   return undefined
-    // }
-  }
-  catch(e) {
-    console.error(e)
-    notify({
-      type: 'error',
-      message: 'Unable to fetch token information',
-    })
-    return undefined
   }
 
   /**

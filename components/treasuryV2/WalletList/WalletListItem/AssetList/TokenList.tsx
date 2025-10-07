@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import cx from 'classnames'
 
 import { AssetType, Token, Sol } from '@models/treasury/Asset'
@@ -18,23 +18,31 @@ interface Props {
 }
 
 export default function TokenList(props: Props) {
-  const tokens = props.tokens.sort((a, b) => {
-    const aTotal = a.count.multipliedBy(a.value)
-    const bTotal = b.count.multipliedBy(b.value)
+  const tokens = useMemo(() => {
+    return props.tokens.sort((a, b) => {
+      const aHasValue = a.value.isGreaterThan(0)
+      const bHasValue = b.value.isGreaterThan(0)
 
-    if (aTotal.eq(bTotal)) {
+      // Tokens with value come first
+      if (aHasValue && !bHasValue) return -1
+      if (!aHasValue && bHasValue) return 1
+
+      // Both have value: sort by highest value
+      if (aHasValue && bHasValue) {
+        return b.value.comparedTo(a.value)
+      }
+
+      // Neither has value: sort by count
       return b.count.comparedTo(a.count)
-    }
+    })
+  }, [props?.tokens])
 
-    return bTotal.comparedTo(aTotal)
-  })
-
-  const expandCutoff = Math.max(
-    tokens.findIndex((token) =>
-      token.value.multipliedBy(token.count).isEqualTo(0),
-    ),
-    3,
-  )
+  const expandCutoff = useMemo(() => {
+    return Math.max(
+      tokens.findIndex((token) => token.value.isEqualTo(0)),
+      3,
+    )
+  }, [tokens])
 
   return (
     <Collapsible

@@ -81,16 +81,17 @@ interface Props {
 
 export default function AssetList(props: Props) {
   const { indicatorTokens } = useDefi()
-  const assets = props.assets.filter(
+  const assets = useMemo(() => props.assets.filter(
     (a) =>
       a.type !== AssetType.Token ||
       !indicatorTokens.includes(a.mintAddress ?? '')
-  )
+  ), [props.assets, indicatorTokens])
   const tokensFromProps = useMemo(() => {
     return assets
       .filter(isTokenLike)
-      .sort((a, b) => b.value.comparedTo(a.value))
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- TODO please fix, it can cause difficult bugs. You might wanna check out https://bobbyhadz.com/blog/react-hooks-exhaustive-deps for info. -@asktree
+      // .sort((a, b) => b.value.comparedTo(a.value))
+      .sort((a, b) => b.value?.toNumber() - a.value?.toNumber())
+     // eslint-disable-next-line react-hooks/exhaustive-deps -- TODO please fix, it can cause difficult bugs. You might wanna check out https://bobbyhadz.com/blog/react-hooks-exhaustive-deps for info. -@asktree
   }, [])
   const tokensFromPropsFiltered = tokensFromProps.filter(
     (token) =>

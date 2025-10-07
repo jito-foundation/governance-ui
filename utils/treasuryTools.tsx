@@ -128,7 +128,7 @@ export const getTreasuryAccountItemInfoV2Async = async (
 
   let info = tokenPriceService.getTokenInfo(mintAddress!)
   if (!info) {
-    info = await tokenPriceService.getTokenInfoAsync(mintAddress!)
+    info = await tokenPriceService.getTokenInfoAsync(mintAddress!, totalPrice)
   }
 
   const symbol =

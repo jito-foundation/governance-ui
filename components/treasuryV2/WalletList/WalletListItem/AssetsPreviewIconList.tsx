@@ -95,9 +95,9 @@ interface Props {
 export default function AssetsPreviewIconList(props: Props) {
   const { indicatorTokens } = useDefi()
   const nfts = useGovernanceNfts(props.governance) ?? []
-  const tokens = (props.assets.filter(
+  const tokens = props.assets.filter(
     (t) => isToken(t) && !indicatorTokens.includes(t.mintAddress ?? '')
-  ) as Token[]).sort((a, b) => b.value.comparedTo(a.value))
+  ) as Token[]
   const sol = props.assets.filter(isSol)
   const councilMint: Mint | undefined = props.assets.filter(isCouncilMint)[0]
   const communityMint: Mint | undefined =
@@ -158,14 +158,20 @@ export default function AssetsPreviewIconList(props: Props) {
   // Display the tokens next
   if (tokens.length) {
     const list = tokens.sort((a, b) => {
-      const aTotal = a.count.multipliedBy(a.value)
-      const bTotal = b.count.multipliedBy(b.value)
+      const aHasValue = a.value.isGreaterThan(0)
+      const bHasValue = b.value.isGreaterThan(0)
 
-      if (aTotal.eq(bTotal)) {
-        return b.count.comparedTo(a.count)
+      // Tokens with value come first
+      if (aHasValue && !bHasValue) return -1
+      if (!aHasValue && bHasValue) return 1
+
+      // Both have value: sort by highest value
+      if (aHasValue && bHasValue) {
+        return b.value.comparedTo(a.value)
       }
 
-      return bTotal.comparedTo(aTotal)
+      // Neither has value: sort by count
+      return b.count.comparedTo(a.count)
     })
     // Show atleast one token
     previewList.push(list[0].icon)
